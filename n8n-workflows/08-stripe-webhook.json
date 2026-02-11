@@ -1,0 +1,194 @@
+{
+  "name": "08 - Stripe Webhook Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stripe-webhook",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Stripe Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $input.first().json;\n\n// Event-Typ extrahieren\nconst eventType = event.type;\nconst data = event.data.object;\n\nreturn [{\n  json: {\n    eventType,\n    paymentIntentId: data.id,\n    amount: data.amount / 100,\n    currency: data.currency,\n    status: data.status,\n    customerId: data.customer,\n    metadata: data.metadata || {}\n  }\n}];"
+      },
+      "id": "parse-event",
+      "name": "Event parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.eventType }}",
+              "operation": "contains",
+              "value2": "payment_intent.succeeded"
+            }
+          ]
+        }
+      },
+      "id": "if-success",
+      "name": "Zahlung erfolgreich?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "orders",
+        "where": "stripe_payment_intent_id = '{{ $json.paymentIntentId }}'",
+        "columns": "payment_status, status, paid_at, updated_at",
+        "additionalFields": {}
+      },
+      "id": "update-order-paid",
+      "name": "Supabase - Bestellung als bezahlt",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.N8N_WEBHOOK_URL }}/supplier-order",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orderId",
+              "value": "={{ $json.metadata.orderId }}"
+            },
+            {
+              "name": "trigger",
+              "value": "payment_success"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "trigger-supplier-order",
+      "name": "Lieferanten-Bestellung triggern",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "payment_events",
+        "columns": "event_type, payment_intent_id, amount, status, created_at",
+        "additionalFields": {}
+      },
+      "id": "log-event",
+      "name": "Supabase - Event loggen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: true }) }}"
+      },
+      "id": "respond",
+      "name": "OK zurückgeben",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Stripe Event": {
+      "main": [
+        [
+          {
+            "node": "Event parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event parsen": {
+      "main": [
+        [
+          {
+            "node": "Zahlung erfolgreich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zahlung erfolgreich?": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Bestellung als bezahlt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase - Event loggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Bestellung als bezahlt": {
+      "main": [
+        [
+          {
+            "node": "Lieferanten-Bestellung triggern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Event loggen": {
+      "main": [
+        [
+          {
+            "node": "OK zurückgeben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lieferanten-Bestellung triggern": {
+      "main": [
+        [
+          {
+            "node": "OK zurückgeben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["payments", "stripe", "webhooks"],
+  "triggerCount": 0,
+  "active": true
+}

@@ -1,0 +1,178 @@
+{
+  "name": "07 - Social Media Auto-Post",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10,14,18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "3x täglich (10, 14, 18 Uhr)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "products",
+        "where": "is_active = true AND stock > 0",
+        "options": {
+          "limit": 5,
+          "orderBy": "trend_score DESC, rating DESC"
+        }
+      },
+      "id": "get-trending",
+      "name": "Supabase - Trending Produkte",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const products = $input.all().map(i => i.json);\nconst randomProduct = products[Math.floor(Math.random() * products.length)];\nreturn [{ json: randomProduct }];"
+      },
+      "id": "select-random",
+      "name": "Zufälliges Produkt wählen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.opencode.ai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"grok-code\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Du bist ein Social Media Marketing-Experte. Erstelle ansprechende Posts für Instagram, TikTok und Facebook. Nutze passende Emojis und Hashtags. Gib ein JSON zurück mit: instagram_caption, tiktok_caption, facebook_post, hashtags (Array).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Erstelle Social Media Posts für dieses Produkt: {{ $json.name }} - {{ $json.description }}. Preis: {{ $json.price }}€. Kategorie: {{ $json.category }}.\"\n    }\n  ],\n  \"temperature\": 0.9,\n  \"max_tokens\": 800\n}",
+        "options": {}
+      },
+      "id": "opencode-content",
+      "name": "OpenCode - Content generieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices[0].message.content;\nconst product = $node['Zufälliges Produkt wählen'].json;\n\nlet parsed = {};\ntry {\n  const jsonMatch = content.match(/\\{.*\\}/s);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  parsed = {\n    instagram_caption: content,\n    tiktok_caption: content,\n    facebook_post: content,\n    hashtags: ['shop', 'online', 'deal']\n  };\n}\n\nreturn [{\n  json: {\n    ...parsed,\n    product_id: product.id,\n    product_name: product.name,\n    product_image: product.images?.[0] || '',\n    product_url: `https://simone-shop.de/products/${product.id}`\n  }\n}];"
+      },
+      "id": "parse-content",
+      "name": "Content parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/social-post",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"platforms\": [\"instagram\", \"tiktok\", \"facebook\"],\n  \"content\": {\n    \"instagram\": {\n      \"caption\": \"{{ $json.instagram_caption }}\",\n      \"image\": \"{{ $json.product_image }}\",\n      \"link\": \"{{ $json.product_url }}\"\n    },\n    \"tiktok\": {\n      \"caption\": \"{{ $json.tiktok_caption }}\",\n      \"link\": \"{{ $json.product_url }}\"\n    },\n    \"facebook\": {\n      \"text\": \"{{ $json.facebook_post }}\",\n      \"image\": \"{{ $json.product_image }}\",\n      \"link\": \"{{ $json.product_url }}\"\n    }\n  },\n  \"hashtags\": {{ JSON.stringify($json.hashtags) }},\n  \"schedule\": \"now\"\n}",
+        "options": {}
+      },
+      "id": "clawdbot-post",
+      "name": "ClawdBot - Posts veröffentlichen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "social_posts",
+        "columns": "product_id, platforms, content, posted_at",
+        "additionalFields": {}
+      },
+      "id": "log-post",
+      "name": "Supabase - Post loggen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "3x täglich (10, 14, 18 Uhr)": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Trending Produkte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Trending Produkte": {
+      "main": [
+        [
+          {
+            "node": "Zufälliges Produkt wählen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zufälliges Produkt wählen": {
+      "main": [
+        [
+          {
+            "node": "OpenCode - Content generieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenCode - Content generieren": {
+      "main": [
+        [
+          {
+            "node": "Content parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content parsen": {
+      "main": [
+        [
+          {
+            "node": "ClawdBot - Posts veröffentlichen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClawdBot - Posts veröffentlichen": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Post loggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["social-media", "marketing", "automation"],
+  "triggerCount": 0,
+  "active": true
+}

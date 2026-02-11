@@ -1,0 +1,227 @@
+{
+  "name": "04 - KI Kundenservice Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "customer-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Chat-Nachricht",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "chat_history",
+        "where": "session_id = '{{ $json.sessionId }}' ORDER BY created_at DESC LIMIT 10",
+        "options": {}
+      },
+      "id": "get-chat-history",
+      "name": "Supabase - Chat-Verlauf laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.opencode.ai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"grok-code\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Du bist der freundliche KI-Kundenservice-Assistent für Simone's Shop. Du hilfst Kunden bei Fragen zu Bestellungen, Produkten, Versand und Rücksendungen. Antworte immer auf Deutsch, freundlich und professionell. Bei komplexen Problemen empfehle den Kontakt zum menschlichen Support. Bestellnummern beginnen mit ORD-.\"\n    },\n    {{ $node['Supabase - Chat-Verlauf laden'].json.map(m => JSON.stringify({role: m.role, content: m.content})).join(',') }},\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message }}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 500\n}",
+        "options": {}
+      },
+      "id": "opencode-chat",
+      "name": "OpenCode - KI Antwort",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1",
+          "name": "OpenCode API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "chat_history",
+        "columns": "session_id, role, content, created_at",
+        "additionalFields": {}
+      },
+      "id": "save-messages",
+      "name": "Supabase - Nachrichten speichern",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst aiMessage = response.choices[0].message.content;\n\n// Prüfen ob Eskalation nötig\nconst escalationKeywords = ['beschwerde', 'anwalt', 'rückerstattung', 'betrug', 'manager', 'mensch'];\nconst needsEscalation = escalationKeywords.some(kw => \n  $node['Webhook - Chat-Nachricht'].json.message.toLowerCase().includes(kw)\n);\n\nreturn {\n  json: {\n    response: aiMessage,\n    sessionId: $node['Webhook - Chat-Nachricht'].json.sessionId,\n    needsEscalation,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "process-response",
+      "name": "Antwort verarbeiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.needsEscalation }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-escalation",
+      "name": "Eskalation nötig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/escalation",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}"
+            },
+            {
+              "name": "channel",
+              "value": "telegram"
+            },
+            {
+              "name": "priority",
+              "value": "high"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "escalate",
+      "name": "ClawdBot - Eskalation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ response: $json.response, sessionId: $json.sessionId, escalated: $json.needsEscalation }) }}"
+      },
+      "id": "respond",
+      "name": "Antwort zurückgeben",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Chat-Nachricht": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Chat-Verlauf laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Chat-Verlauf laden": {
+      "main": [
+        [
+          {
+            "node": "OpenCode - KI Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenCode - KI Antwort": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Nachrichten speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Nachrichten speichern": {
+      "main": [
+        [
+          {
+            "node": "Antwort verarbeiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort verarbeiten": {
+      "main": [
+        [
+          {
+            "node": "Eskalation nötig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eskalation nötig?": {
+      "main": [
+        [
+          {
+            "node": "ClawdBot - Eskalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Antwort zurückgeben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClawdBot - Eskalation": {
+      "main": [
+        [
+          {
+            "node": "Antwort zurückgeben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["ai", "customer-service", "chat"],
+  "triggerCount": 0,
+  "active": true
+}

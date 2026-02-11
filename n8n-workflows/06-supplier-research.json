@@ -1,0 +1,167 @@
+{
+  "name": "06 - Lieferanten-Recherche",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Jeden Montag 8 Uhr",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "categories",
+        "options": {}
+      },
+      "id": "get-categories",
+      "name": "Supabase - Kategorien laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.opencode.ai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"grok-code\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Du bist ein Dropshipping-Experte. Recherchiere zuverlässige Dropshipping-Lieferanten für den deutschen Markt. Gib eine JSON-Liste zurück mit: name, website, email, categories (Array), shipping_time, min_order, rating (1-5), notes.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Finde 3 neue potenzielle Dropshipping-Lieferanten für diese Kategorien: {{ $node['Supabase - Kategorien laden'].json.map(c => c.name).join(', ') }}. Die Lieferanten sollten nach Deutschland liefern können.\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 1500\n}",
+        "options": {}
+      },
+      "id": "opencode-research",
+      "name": "OpenCode - Lieferanten recherchieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices[0].message.content;\n\nlet suppliers = [];\ntry {\n  const jsonMatch = content.match(/\\[.*\\]/s);\n  if (jsonMatch) {\n    suppliers = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  suppliers = [];\n}\n\nreturn suppliers.map(s => ({\n  json: {\n    ...s,\n    status: 'pending',\n    created_at: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "parse-suppliers",
+      "name": "Lieferanten parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "suppliers",
+        "columns": "name, website, email, categories, shipping_time, min_order, rating, notes, status, created_at",
+        "additionalFields": {}
+      },
+      "id": "save-suppliers",
+      "name": "Supabase - Lieferanten speichern",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/admin-notification",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "new_suppliers"
+            },
+            {
+              "name": "channel",
+              "value": "telegram"
+            },
+            {
+              "name": "message",
+              "value": "={{ $input.all().length }} neue Lieferanten gefunden! Bitte im Admin-Panel prüfen."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-admin",
+      "name": "ClawdBot - Admin informieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Jeden Montag 8 Uhr": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Kategorien laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Kategorien laden": {
+      "main": [
+        [
+          {
+            "node": "OpenCode - Lieferanten recherchieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenCode - Lieferanten recherchieren": {
+      "main": [
+        [
+          {
+            "node": "Lieferanten parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lieferanten parsen": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Lieferanten speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Lieferanten speichern": {
+      "main": [
+        [
+          {
+            "node": "ClawdBot - Admin informieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["suppliers", "ai", "weekly"],
+  "triggerCount": 0,
+  "active": true
+}

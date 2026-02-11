@@ -1,0 +1,35 @@
+{
+  "heading": {
+    "family": "Poppins",
+    "googleFonts": "https://fonts.google.com/specimen/Poppins",
+    "weights": ["500", "600", "700"],
+    "usage": "Headlines, titles, CTAs",
+    "fallback": "system-ui, sans-serif"
+  },
+  "body": {
+    "family": "Inter",
+    "googleFonts": "https://fonts.google.com/specimen/Inter",
+    "weights": ["400", "500", "600"],
+    "usage": "Body text, descriptions, labels",
+    "fallback": "system-ui, sans-serif"
+  },
+  "mono": {
+    "family": "JetBrains Mono",
+    "googleFonts": "https://fonts.google.com/specimen/JetBrains+Mono",
+    "weights": ["400", "500"],
+    "usage": "Code, prices, order numbers",
+    "fallback": "monospace"
+  },
+  "scale": {
+    "xs": "0.75rem",
+    "sm": "0.875rem",
+    "base": "1rem",
+    "lg": "1.125rem",
+    "xl": "1.25rem",
+    "2xl": "1.5rem",
+    "3xl": "1.875rem",
+    "4xl": "2.25rem",
+    "5xl": "3rem",
+    "6xl": "3.75rem"
+  }
+}

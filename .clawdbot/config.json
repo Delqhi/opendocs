@@ -1,0 +1,119 @@
+{
+  "shop": {
+    "name": "Simone's Shop",
+    "url": "http://localhost:3000",
+    "owner": "Simone Schulze",
+    "language": "de",
+    "timezone": "Europe/Berlin"
+  },
+  "ai": {
+    "provider": "opencode_zen",
+    "model": "grok-code",
+    "endpoint": "https://api.opencode.ai/v1/chat/completions",
+    "vision_provider": "mistral",
+    "system_prompt": "Du bist der KI-Assistent von Simone's Shop. Du hilfst Kunden freundlich und professionell auf Deutsch. Du beantwortest Fragen zu Produkten, Bestellungen, Versand und Rückgaben. Sei höflich, hilfsbereit und effizient."
+  },
+  "integrations": {
+    "email": {
+      "provider": "gmail",
+      "enabled": true,
+      "templates": {
+        "order_confirmation": true,
+        "shipping_notification": true,
+        "review_request": true,
+        "support_response": true
+      }
+    },
+    "messaging": {
+      "whatsapp": {
+        "enabled": true,
+        "auto_reply": true,
+        "business_hours": "09:00-18:00"
+      },
+      "telegram": {
+        "enabled": true,
+        "auto_reply": true
+      }
+    },
+    "social_media": {
+      "twitter": {
+        "enabled": true,
+        "auto_post": true,
+        "post_schedule": ["09:00", "15:00", "20:00"],
+        "hashtags": ["#Onlineshopping", "#Deals", "#SimonesShop"]
+      },
+      "instagram": {
+        "enabled": true,
+        "auto_post": true,
+        "story_enabled": true,
+        "reels_enabled": false
+      },
+      "tiktok": {
+        "enabled": true,
+        "auto_post": true
+      }
+    },
+    "marketplaces": {
+      "ebay": {
+        "enabled": true,
+        "sync_products": true,
+        "sync_orders": true,
+        "auto_relist": true
+      },
+      "ebay_kleinanzeigen": {
+        "enabled": true,
+        "auto_respond": true
+      }
+    }
+  },
+  "automation": {
+    "customer_support": {
+      "auto_respond": true,
+      "response_delay_seconds": 5,
+      "escalation_keywords": ["Manager", "Beschwerde", "Anwalt", "Erstattung"],
+      "escalation_email": "simone@example.com"
+    },
+    "social_posting": {
+      "product_promotion": {
+        "enabled": true,
+        "frequency": "daily",
+        "prefer_trending": true
+      },
+      "engagement": {
+        "auto_like": true,
+        "auto_reply_comments": true,
+        "auto_follow_customers": false
+      }
+    },
+    "marketplace_sync": {
+      "inventory_sync": {
+        "enabled": true,
+        "frequency_minutes": 30
+      },
+      "price_sync": {
+        "enabled": true,
+        "include_shipping": true
+      }
+    }
+  },
+  "webhooks": {
+    "n8n_base_url": "http://n8n:5678/webhook",
+    "events": {
+      "message_received": "/clawdbot/message",
+      "order_from_marketplace": "/clawdbot/order",
+      "customer_inquiry": "/clawdbot/inquiry",
+      "social_engagement": "/clawdbot/engagement"
+    }
+  },
+  "rate_limits": {
+    "email_per_hour": 100,
+    "whatsapp_per_minute": 10,
+    "twitter_posts_per_day": 10,
+    "instagram_posts_per_day": 5
+  },
+  "logging": {
+    "level": "info",
+    "store_messages": true,
+    "retention_days": 90
+  }
+}

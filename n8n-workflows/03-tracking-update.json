@@ -1,0 +1,211 @@
+{
+  "name": "03 - Sendungsverfolgung aktualisieren",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Alle 2 Stunden prüfen",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "orders",
+        "where": "status = 'shipped' AND tracking_number IS NOT NULL",
+        "options": {}
+      },
+      "id": "get-shipped-orders",
+      "name": "Supabase - Versendete Bestellungen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "In Batches aufteilen",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.tracking.example/v1/track",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "tracking_number",
+              "value": "={{ $json.tracking_number }}"
+            },
+            {
+              "name": "carrier",
+              "value": "={{ $json.carrier || 'dhl' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-tracking",
+      "name": "Tracking-API abfragen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "delivered"
+            }
+          ]
+        }
+      },
+      "id": "if-delivered",
+      "name": "Zugestellt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "orders",
+        "where": "id = '{{ $node['Supabase - Versendete Bestellungen'].json.id }}'",
+        "columns": "status, delivered_at, updated_at",
+        "additionalFields": {}
+      },
+      "id": "update-delivered",
+      "name": "Supabase - Als zugestellt markieren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/send-notification",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "email"
+            },
+            {
+              "name": "to",
+              "value": "={{ $node['Supabase - Versendete Bestellungen'].json.customer_email }}"
+            },
+            {
+              "name": "template",
+              "value": "order_delivered"
+            },
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify({ orderId: $node['Supabase - Versendete Bestellungen'].json.id }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-customer",
+      "name": "ClawdBot - Kunde benachrichtigen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 200]
+    }
+  ],
+  "connections": {
+    "Alle 2 Stunden prüfen": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Versendete Bestellungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Versendete Bestellungen": {
+      "main": [
+        [
+          {
+            "node": "In Batches aufteilen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In Batches aufteilen": {
+      "main": [
+        [
+          {
+            "node": "Tracking-API abfragen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tracking-API abfragen": {
+      "main": [
+        [
+          {
+            "node": "Zugestellt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zugestellt?": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Als zugestellt markieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Supabase - Als zugestellt markieren": {
+      "main": [
+        [
+          {
+            "node": "ClawdBot - Kunde benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["tracking", "automation"],
+  "triggerCount": 0,
+  "active": true
+}

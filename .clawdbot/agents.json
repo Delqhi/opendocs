@@ -1,0 +1,112 @@
+{
+  "agents": [
+    {
+      "id": "customer-support",
+      "name": "Kundenservice Agent",
+      "type": "support",
+      "channels": ["whatsapp", "telegram", "email", "instagram_dm", "twitter_dm"],
+      "ai_config": {
+        "model": "grok-code",
+        "temperature": 0.7,
+        "max_tokens": 500,
+        "system_prompt": "Du bist der Kundenservice-Agent von Simone's Shop. Beantworte Kundenanfragen freundlich und professionell. Bei Bestellproblemen frage nach der Bestellnummer. Bei Reklamationen zeige Verständnis und biete Lösungen an."
+      },
+      "capabilities": [
+        "answer_product_questions",
+        "check_order_status",
+        "handle_returns",
+        "process_complaints",
+        "escalate_to_human"
+      ],
+      "escalation_rules": {
+        "keywords": ["Anwalt", "Klage", "Betrug"],
+        "sentiment_threshold": -0.7,
+        "max_messages_before_escalation": 5
+      }
+    },
+    {
+      "id": "social-media",
+      "name": "Social Media Agent",
+      "type": "social",
+      "channels": ["twitter", "instagram", "tiktok"],
+      "ai_config": {
+        "model": "grok-code",
+        "temperature": 0.9,
+        "max_tokens": 280,
+        "system_prompt": "Du erstellst ansprechende Social Media Posts für einen E-Commerce Shop. Nutze Emojis, Hashtags und Call-to-Actions. Sei kreativ und authentisch."
+      },
+      "capabilities": [
+        "create_product_posts",
+        "respond_to_comments",
+        "create_stories",
+        "schedule_posts",
+        "analyze_engagement"
+      ],
+      "posting_schedule": {
+        "timezone": "Europe/Berlin",
+        "slots": ["09:00", "12:00", "15:00", "18:00", "20:00"]
+      }
+    },
+    {
+      "id": "marketplace",
+      "name": "Marktplatz Agent",
+      "type": "marketplace",
+      "channels": ["ebay", "ebay_kleinanzeigen"],
+      "ai_config": {
+        "model": "grok-code",
+        "temperature": 0.5,
+        "max_tokens": 1000,
+        "system_prompt": "Du verwaltest Produktlistings auf Marktplätzen. Erstelle optimierte Titel und Beschreibungen für maximale Sichtbarkeit. Beantworte Käuferanfragen professionell."
+      },
+      "capabilities": [
+        "create_listings",
+        "update_inventory",
+        "respond_to_buyers",
+        "process_orders",
+        "handle_returns"
+      ],
+      "sync_config": {
+        "inventory_sync_interval": 1800,
+        "price_sync_interval": 3600,
+        "order_import_interval": 300
+      }
+    },
+    {
+      "id": "email-marketing",
+      "name": "E-Mail Marketing Agent",
+      "type": "email",
+      "channels": ["gmail"],
+      "ai_config": {
+        "model": "grok-code",
+        "temperature": 0.6,
+        "max_tokens": 2000,
+        "system_prompt": "Du schreibst professionelle E-Mails für einen E-Commerce Shop. Halte E-Mails kurz, freundlich und handlungsorientiert. Nutze eine persönliche Ansprache."
+      },
+      "capabilities": [
+        "send_order_confirmation",
+        "send_shipping_notification",
+        "send_review_request",
+        "send_promotional_emails",
+        "respond_to_inquiries"
+      ],
+      "templates": {
+        "order_confirmation": "email/order-confirmation.html",
+        "shipping": "email/shipping-notification.html",
+        "review_request": "email/review-request.html"
+      }
+    }
+  ],
+  "global_config": {
+    "default_language": "de",
+    "fallback_language": "en",
+    "business_hours": {
+      "timezone": "Europe/Berlin",
+      "weekdays": "09:00-18:00",
+      "saturday": "10:00-14:00",
+      "sunday": "closed"
+    },
+    "out_of_hours_message": "Vielen Dank für Ihre Nachricht! Unser Team ist derzeit nicht erreichbar. Wir melden uns schnellstmöglich bei Ihnen. Geschäftszeiten: Mo-Fr 9-18 Uhr, Sa 10-14 Uhr.",
+    "max_concurrent_conversations": 50,
+    "conversation_timeout_minutes": 30
+  }
+}

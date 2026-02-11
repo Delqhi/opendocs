@@ -1,0 +1,143 @@
+{
+  "name": "05 - Tägliche Trend-Analyse",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Täglich um 6 Uhr",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.opencode.ai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"model\": \"grok-code\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Du bist ein E-Commerce Trend-Analyst. Analysiere aktuelle Markttrends und identifiziere potenzielle Produkte für einen deutschen Dropshipping-Shop. Fokus auf: Elektronik, Gadgets, Home & Living, Fashion Accessoires. Gib eine JSON-Liste mit 5 Trend-Produkten zurück mit: name, category, estimated_price, trend_score (1-100), reason.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analysiere die aktuellen E-Commerce Trends für Januar 2026 in Deutschland. Welche 5 Produkte sind gerade besonders gefragt?\"\n    }\n  ],\n  \"temperature\": 0.8,\n  \"max_tokens\": 1000\n}",
+        "options": {}
+      },
+      "id": "opencode-trends",
+      "name": "OpenCode - Trend-Analyse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices[0].message.content;\n\n// Versuche JSON zu extrahieren\nlet trends = [];\ntry {\n  const jsonMatch = content.match(/\\[.*\\]/s);\n  if (jsonMatch) {\n    trends = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  // Fallback: Manuell parsen oder leere Liste\n  trends = [];\n}\n\nreturn trends.map(t => ({ json: t }));"
+      },
+      "id": "parse-trends",
+      "name": "Trends parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "trend_products",
+        "columns": "name, category, estimated_price, trend_score, reason, analyzed_at",
+        "additionalFields": {}
+      },
+      "id": "save-trends",
+      "name": "Supabase - Trends speichern",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/daily-report",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "trend_analysis"
+            },
+            {
+              "name": "channel",
+              "value": "telegram"
+            },
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify($input.all().map(i => i.json)) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-admin",
+      "name": "ClawdBot - Admin Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Täglich um 6 Uhr": {
+      "main": [
+        [
+          {
+            "node": "OpenCode - Trend-Analyse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenCode - Trend-Analyse": {
+      "main": [
+        [
+          {
+            "node": "Trends parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trends parsen": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Trends speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Trends speichern": {
+      "main": [
+        [
+          {
+            "node": "ClawdBot - Admin Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["ai", "trends", "daily"],
+  "triggerCount": 0,
+  "active": true
+}

@@ -1,0 +1,259 @@
+{
+  "name": "10 - Wöchentlicher Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Jeden Sonntag 8 Uhr",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "orders",
+        "where": "created_at >= NOW() - INTERVAL '7 days'",
+        "options": {}
+      },
+      "id": "get-week-orders",
+      "name": "Supabase - Bestellungen der Woche",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 200]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "customers",
+        "where": "created_at >= NOW() - INTERVAL '7 days'",
+        "options": {}
+      },
+      "id": "get-new-customers",
+      "name": "Supabase - Neue Kunden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": []
+        },
+        "options": {}
+      },
+      "id": "merge-data",
+      "name": "Daten zusammenführen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const orders = $node['Supabase - Bestellungen der Woche'].json || [];\nconst customers = $node['Supabase - Neue Kunden'].json || [];\n\nconst totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);\nconst avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;\nconst deliveredOrders = orders.filter(o => o.status === 'delivered').length;\nconst pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;\n\nconst report = {\n  period: 'Letzte 7 Tage',\n  generatedAt: new Date().toISOString(),\n  summary: {\n    totalOrders: orders.length,\n    totalRevenue: totalRevenue.toFixed(2),\n    avgOrderValue: avgOrderValue.toFixed(2),\n    newCustomers: customers.length,\n    deliveredOrders,\n    pendingOrders\n  },\n  topProducts: [],\n  conversionRate: '3.2%'\n};\n\nreturn [{ json: report }];"
+      },
+      "id": "generate-report",
+      "name": "Report generieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.opencode.ai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"grok-code\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Du bist ein E-Commerce Business-Analyst. Erstelle einen kurzen, verständlichen Wochenbericht auf Deutsch mit Highlights und Empfehlungen.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Erstelle einen Wochenbericht basierend auf diesen Daten: {{ JSON.stringify($json) }}. Gib konkrete Empfehlungen für die nächste Woche.\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 1000\n}",
+        "options": {}
+      },
+      "id": "opencode-analysis",
+      "name": "OpenCode - Analyse & Empfehlungen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.first().json.choices[0].message.content;\nconst reportData = $node['Report generieren'].json;\n\nreturn [{\n  json: {\n    ...reportData,\n    aiAnalysis: aiResponse\n  }\n}];"
+      },
+      "id": "combine-report",
+      "name": "Report kombinieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/weekly-report",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"email\",\n  \"to\": \"simone@example.com\",\n  \"subject\": \"📊 Wochenbericht Simone Shop - {{ $json.period }}\",\n  \"template\": \"weekly_report\",\n  \"data\": {{ JSON.stringify($json) }}\n}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "ClawdBot - Report per E-Mail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/weekly-report",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "telegram"
+            },
+            {
+              "name": "message",
+              "value": "=📊 WOCHENBERICHT\\n\\n{{ $json.aiAnalysis.substring(0, 500) }}...\\n\\n💰 Umsatz: {{ $json.summary.totalRevenue }}€\\n📦 Bestellungen: {{ $json.summary.totalOrders }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-telegram",
+      "name": "ClawdBot - Telegram Zusammenfassung",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "reports",
+        "columns": "type, period, data, created_at",
+        "additionalFields": {}
+      },
+      "id": "save-report",
+      "name": "Supabase - Report archivieren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Jeden Sonntag 8 Uhr": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Bestellungen der Woche",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase - Neue Kunden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Bestellungen der Woche": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Neue Kunden": {
+      "main": [
+        [
+          {
+            "node": "Daten zusammenführen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Daten zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Report generieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report generieren": {
+      "main": [
+        [
+          {
+            "node": "OpenCode - Analyse & Empfehlungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenCode - Analyse & Empfehlungen": {
+      "main": [
+        [
+          {
+            "node": "Report kombinieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report kombinieren": {
+      "main": [
+        [
+          {
+            "node": "ClawdBot - Report per E-Mail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ClawdBot - Telegram Zusammenfassung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClawdBot - Report per E-Mail": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Report archivieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["reports", "analytics", "weekly"],
+  "triggerCount": 0,
+  "active": true
+}

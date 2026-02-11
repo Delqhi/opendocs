@@ -1,0 +1,217 @@
+{
+  "name": "09 - Bestandswarnung",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Täglich 9 Uhr",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "products",
+        "where": "stock <= 10 AND is_active = true",
+        "options": {
+          "orderBy": "stock ASC"
+        }
+      },
+      "id": "get-low-stock",
+      "name": "Supabase - Niedriger Bestand",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $input.all().length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-low-stock",
+      "name": "Produkte gefunden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const products = $input.all().map(i => i.json);\n\nconst critical = products.filter(p => p.stock <= 3);\nconst warning = products.filter(p => p.stock > 3 && p.stock <= 10);\n\nlet message = '⚠️ BESTANDSWARNUNG\\n\\n';\n\nif (critical.length > 0) {\n  message += '🔴 KRITISCH (≤3 Stück):\\n';\n  critical.forEach(p => {\n    message += `- ${p.name}: ${p.stock} Stück\\n`;\n  });\n  message += '\\n';\n}\n\nif (warning.length > 0) {\n  message += '🟡 WARNUNG (≤10 Stück):\\n';\n  warning.forEach(p => {\n    message += `- ${p.name}: ${p.stock} Stück\\n`;\n  });\n}\n\nmessage += `\\nGesamt: ${products.length} Produkte mit niedrigem Bestand`;\n\nreturn [{\n  json: {\n    message,\n    criticalCount: critical.length,\n    warningCount: warning.length,\n    products\n  }\n}];"
+      },
+      "id": "format-report",
+      "name": "Report formatieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/admin-alert",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "stock_warning"
+            },
+            {
+              "name": "channel",
+              "value": "telegram"
+            },
+            {
+              "name": "priority",
+              "value": "={{ $json.criticalCount > 0 ? 'high' : 'medium' }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-admin",
+      "name": "ClawdBot - Admin warnen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.criticalCount }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-critical",
+      "name": "Kritischer Bestand?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/auto-reorder",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "products",
+              "value": "={{ JSON.stringify($json.products.filter(p => p.stock <= 3)) }}"
+            },
+            {
+              "name": "action",
+              "value": "suggest_reorder"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "suggest-reorder",
+      "name": "Nachbestellung vorschlagen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 100]
+    }
+  ],
+  "connections": {
+    "Täglich 9 Uhr": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Niedriger Bestand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Niedriger Bestand": {
+      "main": [
+        [
+          {
+            "node": "Produkte gefunden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Produkte gefunden?": {
+      "main": [
+        [
+          {
+            "node": "Report formatieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Report formatieren": {
+      "main": [
+        [
+          {
+            "node": "ClawdBot - Admin warnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClawdBot - Admin warnen": {
+      "main": [
+        [
+          {
+            "node": "Kritischer Bestand?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kritischer Bestand?": {
+      "main": [
+        [
+          {
+            "node": "Nachbestellung vorschlagen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["inventory", "alerts", "daily"],
+  "triggerCount": 0,
+  "active": true
+}

@@ -1,0 +1,249 @@
+version: '3.8'
+
+# ============================================================
+# SIMONE-WEBSHOP-01 - Complete Docker Stack
+# Includes: Next.js App + n8n + PostgreSQL + Redis + ClawdBot
+# ============================================================
+
+services:
+  # ============================================================
+  # MAIN APPLICATION - Next.js 14 E-Commerce Store
+  # ============================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: simone-webshop-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://simone:${DB_PASSWORD:-simone123}@postgres:5432/simone_shop
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - OPENCODE_ZEN_API_KEY=${OPENCODE_ZEN_API_KEY}
+      - OPENCODE_ZEN_MODEL=${OPENCODE_ZEN_MODEL:-grok-code}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
+      - KLARNA_API_KEY=${KLARNA_API_KEY}
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+      - n8n
+    networks:
+      - simone-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # N8N - Workflow Automation Engine (CRITICAL!)
+  # ============================================================
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: simone-webshop-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Berlin
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-simone2026}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=simone
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD:-simone123}
+      # AI APIs for n8n workflows
+      - OPENCODE_ZEN_API_KEY=${OPENCODE_ZEN_API_KEY}
+      - OPENCODE_ZEN_URL=https://api.opencode.ai/v1/chat/completions
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      # Email
+      - N8N_EMAIL_MODE=smtp
+      - N8N_SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - N8N_SMTP_PORT=${SMTP_PORT:-587}
+      - N8N_SMTP_USER=${SMTP_USER}
+      - N8N_SMTP_PASS=${SMTP_PASS}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/home/node/workflows:ro
+    depends_on:
+      - postgres
+    networks:
+      - simone-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # POSTGRESQL - Local Database
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: simone-webshop-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=simone
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-simone123}
+      - POSTGRES_DB=simone_shop
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - simone-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simone -d simone_shop"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # REDIS - Caching & Session Storage
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: simone-webshop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - simone-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # CLAWDBOT - CENTRAL COMMUNICATION HUB (CRITICAL!)
+  # Handles ALL integrations: Gmail, WhatsApp, Telegram, 
+  # Twitter, Instagram, TikTok, eBay, and more!
+  # ============================================================
+  clawdbot:
+    image: ghcr.io/clawdbot/clawdbot:latest
+    container_name: simone-webshop-clawdbot
+    ports:
+      - "8080:8080"
+      - "8081:8081"  # Webhook receiver
+    environment:
+      # AI Backend
+      - OPENCODE_ZEN_API_KEY=${OPENCODE_ZEN_API_KEY}
+      - OPENCODE_ZEN_URL=https://api.opencode.ai/v1/chat/completions
+      - OPENCODE_ZEN_MODEL=${OPENCODE_ZEN_MODEL:-grok-code}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      
+      # Database
+      - DATABASE_URL=postgresql://simone:${DB_PASSWORD:-simone123}@postgres:5432/simone_shop
+      - REDIS_URL=redis://redis:6379
+      
+      # Email (Gmail via ClawdBot)
+      - GMAIL_EMAIL=${GMAIL_EMAIL}
+      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
+      
+      # Messaging
+      - WHATSAPP_PHONE_ID=${WHATSAPP_PHONE_ID}
+      - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      
+      # Social Media
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - TWITTER_API_SECRET=${TWITTER_API_SECRET}
+      - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN}
+      - TWITTER_ACCESS_SECRET=${TWITTER_ACCESS_SECRET}
+      - INSTAGRAM_USERNAME=${INSTAGRAM_USERNAME}
+      - INSTAGRAM_PASSWORD=${INSTAGRAM_PASSWORD}
+      - TIKTOK_ACCESS_TOKEN=${TIKTOK_ACCESS_TOKEN}
+      
+      # Marketplaces
+      - EBAY_APP_ID=${EBAY_APP_ID}
+      - EBAY_CERT_ID=${EBAY_CERT_ID}
+      - EBAY_AUTH_TOKEN=${EBAY_AUTH_TOKEN}
+      - EBAY_KA_USERNAME=${EBAY_KA_USERNAME}
+      - EBAY_KA_PASSWORD=${EBAY_KA_PASSWORD}
+      
+      # n8n Integration
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook
+      
+      # Shop Context
+      - SHOP_NAME=${NEXT_PUBLIC_SHOP_NAME:-Simone's Shop}
+      - SHOP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    volumes:
+      - clawdbot_data:/app/data
+      - clawdbot_sessions:/app/sessions
+      - ./.clawdbot:/app/config:ro
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - simone-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # BROWSER AUTOMATION - For API Key Acquisition
+  # Enable with: docker-compose --profile automation up -d
+  # ============================================================
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.40.0-focal
+    container_name: simone-webshop-playwright
+    profiles:
+      - automation
+    environment:
+      - DISPLAY=:99
+    volumes:
+      - ./automation:/app
+    networks:
+      - simone-network
+    command: tail -f /dev/null
+
+# ============================================================
+# VOLUMES - Persistent Storage
+# ============================================================
+volumes:
+  postgres_data:
+    driver: local
+  n8n_data:
+    driver: local
+  redis_data:
+    driver: local
+  clawdbot_data:
+    driver: local
+  clawdbot_sessions:
+    driver: local
+
+# ============================================================
+# NETWORKS
+# ============================================================
+networks:
+  simone-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

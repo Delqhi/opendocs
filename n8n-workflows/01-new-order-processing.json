@@ -1,0 +1,204 @@
+{
+  "name": "01 - Neue Bestellung verarbeiten",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-order",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Neue Bestellung",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.paymentStatus }}",
+              "value2": "paid"
+            }
+          ]
+        }
+      },
+      "id": "if-paid",
+      "name": "Zahlung erfolgreich?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "orders",
+        "columns": "id, customer_id, status, total, payment_status, created_at",
+        "additionalFields": {}
+      },
+      "id": "supabase-insert",
+      "name": "Supabase - Bestellung speichern",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [650, 200],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.OPENCODE_ZEN_API_URL }}/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "grok-code"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"system\", \"content\": \"Du bist ein Bestellverarbeitungs-Assistent. Erstelle eine professionelle Bestellbestätigung auf Deutsch.\"}, {\"role\": \"user\", \"content\": \"Erstelle eine Bestellbestätigung für Bestellung {{ $json.orderId }} mit Gesamtbetrag {{ $json.total }}€\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "opencode-confirmation",
+      "name": "OpenCode - Bestätigung generieren",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "shop@simone-shop.de",
+        "toEmail": "={{ $json.customerEmail }}",
+        "subject": "Bestellbestätigung - {{ $json.orderId }}",
+        "text": "={{ $node['OpenCode - Bestätigung generieren'].json.choices[0].message.content }}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "E-Mail senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CLAWDBOT_WEBHOOK_URL }}/order-notification",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orderId",
+              "value": "={{ $json.orderId }}"
+            },
+            {
+              "name": "channel",
+              "value": "whatsapp"
+            },
+            {
+              "name": "message",
+              "value": "Neue Bestellung eingegangen: {{ $json.orderId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "clawdbot-notify",
+      "name": "ClawdBot - Admin benachrichtigen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, orderId: $json.orderId }) }}"
+      },
+      "id": "respond-success",
+      "name": "Erfolg zurückgeben",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Neue Bestellung": {
+      "main": [
+        [
+          {
+            "node": "Zahlung erfolgreich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zahlung erfolgreich?": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Bestellung speichern",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Supabase - Bestellung speichern": {
+      "main": [
+        [
+          {
+            "node": "OpenCode - Bestätigung generieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenCode - Bestätigung generieren": {
+      "main": [
+        [
+          {
+            "node": "E-Mail senden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ClawdBot - Admin benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail senden": {
+      "main": [
+        [
+          {
+            "node": "Erfolg zurückgeben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["orders", "automation"],
+  "triggerCount": 0,
+  "active": true
+}

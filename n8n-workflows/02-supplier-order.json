@@ -1,0 +1,188 @@
+{
+  "name": "02 - Lieferanten-Bestellung aufgeben",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "supplier-order",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Bestellung an Lieferant",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "suppliers",
+        "where": "id = '{{ $json.supplierId }}' AND status = 'approved'",
+        "options": {}
+      },
+      "id": "get-supplier",
+      "name": "Supabase - Lieferant abrufen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.length > 0 }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-supplier-exists",
+      "name": "Lieferant gefunden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json[0].api_endpoint }}/orders",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "products",
+              "value": "={{ $node['Webhook - Bestellung an Lieferant'].json.products }}"
+            },
+            {
+              "name": "shipping_address",
+              "value": "={{ $node['Webhook - Bestellung an Lieferant'].json.shippingAddress }}"
+            },
+            {
+              "name": "reference",
+              "value": "={{ $node['Webhook - Bestellung an Lieferant'].json.orderId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "place-supplier-order",
+      "name": "Lieferanten-API - Bestellung aufgeben",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "orders",
+        "where": "id = '{{ $node['Webhook - Bestellung an Lieferant'].json.orderId }}'",
+        "columns": "status, supplier_order_id, updated_at",
+        "additionalFields": {}
+      },
+      "id": "update-order-status",
+      "name": "Supabase - Status aktualisieren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, supplierOrderId: $json.orderId }) }}"
+      },
+      "id": "respond-success",
+      "name": "Erfolg zurückgeben",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Lieferant nicht gefunden' }) }}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "id": "respond-error",
+      "name": "Fehler zurückgeben",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Webhook - Bestellung an Lieferant": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Lieferant abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Lieferant abrufen": {
+      "main": [
+        [
+          {
+            "node": "Lieferant gefunden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lieferant gefunden?": {
+      "main": [
+        [
+          {
+            "node": "Lieferanten-API - Bestellung aufgeben",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fehler zurückgeben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lieferanten-API - Bestellung aufgeben": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Status aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Status aktualisieren": {
+      "main": [
+        [
+          {
+            "node": "Erfolg zurückgeben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["suppliers", "orders"],
+  "triggerCount": 0,
+  "active": true
+}
