@@ -1,0 +1,53 @@
+{
+  "name": "react-vite-tailwind",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "optimize-images": "node scripts/optimize-images.js",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:critical": "playwright test critical-path.spec.ts",
+    "test:responsive": "playwright test responsive.spec.ts",
+    "test:auth": "playwright test auth.spec.ts",
+    "test:cart": "playwright test cart.spec.ts",
+    "test:checkout": "playwright test checkout.spec.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "blurhash": "^2.0.5",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.33.0",
+    "i18next": "^25.8.10",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "lucide-react": "^0.563.0",
+    "react": "19.2.3",
+    "react-countdown": "^2.3.6",
+    "react-dom": "19.2.3",
+    "react-i18next": "^16.5.4",
+    "recharts": "^3.7.0",
+    "sharp": "^0.34.5",
+    "tailwind-merge": "^3.4.0",
+    "vite-imagetools": "^9.0.3",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/vite": "4.1.17",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.1",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3",
+    "vite": "7.2.4",
+    "vite-plugin-pwa": "^1.2.0",
+    "vite-plugin-singlefile": "2.3.0",
+    "workbox-window": "^7.4.0"
+  }
+}
