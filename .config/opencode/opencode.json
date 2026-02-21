@@ -14,7 +14,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     },
     "plan": {
-      "model": "opencode-zen/glm-4.7-free",
+      "model": "nvidia-nim/z-ai/glm5",
       "instruction": "/Users/jeremy/.config/opencode/instructions/planner.md"
     },
     "build": {
@@ -34,7 +34,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     },
     "metis": {
-      "model": "opencode-zen/glm-4.7-free",
+      "model": "nvidia-nim/z-ai/glm5",
       "instruction": "/Users/jeremy/.config/opencode/instructions/planner.md"
     },
     "momus": {
@@ -58,7 +58,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "ultrabrain": {
-      "model": "opencode-zen/glm-4.7-free",
+      "model": "nvidia-nim/z-ai/glm5",
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     },
     "visual-engineering": {
