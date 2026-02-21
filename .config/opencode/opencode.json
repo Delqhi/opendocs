@@ -14,7 +14,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     },
     "plan": {
-      "model": "nvidia-nim/z-ai/glm5",
+      "model": "nvidia-nim/qwen-3.5-397b-a17b",
       "instruction": "/Users/jeremy/.config/opencode/instructions/planner.md"
     },
     "build": {
@@ -22,11 +22,11 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "explore": {
-      "model": "google/gemini-3-flash-preview",
+      "model": "opencode-zen/minimax-m2.5-free",
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "librarian": {
-      "model": "google/gemini-3-flash-preview",
+      "model": "opencode-zen/minimax-m2.5-free",
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "oracle": {
@@ -34,7 +34,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     },
     "metis": {
-      "model": "nvidia-nim/z-ai/glm5",
+      "model": "opencode-zen/kimi-k2.5-free",
       "instruction": "/Users/jeremy/.config/opencode/instructions/planner.md"
     },
     "momus": {
@@ -58,7 +58,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "ultrabrain": {
-      "model": "nvidia-nim/z-ai/glm5",
+      "model": "nvidia-nim/qwen-3.5-397b-a17b",
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     },
     "visual-engineering": {
