@@ -30,7 +30,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "oracle": {
-      "model": "nvidia-nim/qwen3.5-397b-a17b",
+      "model": "google/gemini-3.1-pro-preview",
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     },
     "metis": {
@@ -38,7 +38,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/planner.md"
     },
     "momus": {
-      "model": "modal/glm-5-fp8",
+      "model": "opencode/glm-5-free",
       "instruction": "/Users/jeremy/.config/opencode/instructions/planner.md"
     },
     "sisyphus": {
@@ -46,7 +46,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "sisyphus-junior": {
-      "model": "opencode-zen/minimax-m2.5-free",
+      "model": "opencode/glm-5-free",
       "instruction": "/Users/jeremy/.config/opencode/instructions/worker-code.md"
     },
     "prometheus": {
@@ -54,7 +54,7 @@
       "instruction": "/Users/jeremy/.config/opencode/instructions/planner.md"
     },
     "atlas": {
-      "model": "modal/glm-5-fp8",
+      "model": "opencode/glm-5-free",
       "instruction": "/Users/jeremy/.config/opencode/instructions/orchestrator.md"
     }
   },
@@ -120,13 +120,13 @@
         }
       }
     },
-    "modal": {
+    "opencode": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Modal (GLM-5 FP8)",
-      "options": {"baseURL": "https://modal.com/v1"},
+      "name": "OpenCode (GLM-5 Free)",
+      "options": {"baseURL": "https://api.opencode.ai/v1"},
       "models": {
-        "glm-5-fp8": {
-          "name": "GLM-5 FP8 (Modal)",
+        "glm-5-free": {
+          "name": "GLM-5 Free (OpenCode)",
           "limit": {"context": 1000000, "output": 32768}
         }
       }
