@@ -1,0 +1,263 @@
+tunnel: sin-solver-infrastructure
+credentials-file: /Users/jeremy/.cloudflared/sin-solver-infrastructure.json
+
+ingress:
+  # ==========================================================================
+  # AGENTS - Autonomous AI Workers
+  # ==========================================================================
+  
+  # Agent 01 - n8n Workflow Manager
+  - hostname: n8n.delqhi.com
+    service: http://localhost:5678
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+  
+  # Agent 02 - Temporal Scheduler
+  - hostname: chronos.delqhi.com
+    service: http://localhost:3001
+    originRequest:
+      noTLSVerify: true
+  
+  # Agent 03 - Agent Zero Orchestrator
+  - hostname: agent-zero.delqhi.com
+    service: http://localhost:5001
+    originRequest:
+      noTLSVerify: true
+  
+  # Agent 04 - OpenCode Coder
+  - hostname: opencode.delqhi.com
+    service: http://localhost:3002
+    originRequest:
+      noTLSVerify: true
+  
+  # Agent 05 - Steel Browser
+  - hostname: steel.delqhi.com
+    service: http://localhost:3000
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 60s
+  
+  # Agent 06 - Skyvern Solver
+  - hostname: skyvern.delqhi.com
+    service: http://localhost:8002
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 60s
+  
+  # Agent 07 - Stagehand Research
+  - hostname: stagehand.delqhi.com
+    service: http://localhost:8003
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 60s
+  
+  # Agent 08 - Playwright Tester
+  - hostname: qa.delqhi.com
+    service: http://172.20.0.8:8080
+    originRequest:
+      noTLSVerify: true
+  
+  # Agent 09 - Clawdbot Social
+  - hostname: clawdbot.delqhi.com
+    service: http://172.20.0.9:8080
+    originRequest:
+      noTLSVerify: true
+  
+  # Agent 10 - Surfsense Knowledge
+  - hostname: surfsense.delqhi.com
+    service: http://172.20.0.15:6333
+    originRequest:
+      noTLSVerify: true
+  
+  # Agent 11 - Evolution Optimizer
+  - hostname: evolution.delqhi.com
+    service: http://172.20.0.12:8080
+    originRequest:
+      noTLSVerify: true
+  
+  # Agent 04.1 - OpenHands CodeServer (Universal Coding Layer)
+  - hostname: codeserver.delqhi.com
+    service: http://172.20.0.41:3000
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 120s
+  
+  # Agent 04.1 - CodeServer API Gateway
+  - hostname: codeserver-api.delqhi.com
+    service: http://172.20.0.141:8041
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 60s
+
+  # Agent 24 - OpenHands AI Coding Agent (GUI) [LEGACY - Redirects to 04.1]
+  - hostname: openhands.delqhi.com
+    service: http://172.20.0.41:3000
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 60s
+  
+  # Agent 24 - OpenHands MCP Bridge [LEGACY - Redirects to 04.1]
+  - hostname: openhands-mcp.delqhi.com
+    service: http://172.20.0.141:8041
+    originRequest:
+      noTLSVerify: true
+
+  # ==========================================================================
+  # SOLVERS - Money-Making Workers
+  # ==========================================================================
+  
+  # Solver 1.1 - Captcha Worker
+  - hostname: captcha.delqhi.com
+    service: http://localhost:8019
+    originRequest:
+      noTLSVerify: true
+  
+  # Solver 2.1 - Survey Worker
+  - hostname: survey.delqhi.com
+    service: http://localhost:8018
+    originRequest:
+      noTLSVerify: true
+
+  # ==========================================================================
+  # BUILDERS - Content Creation
+  # ==========================================================================
+  
+  # Builder 1 - Website Worker
+  - hostname: website-worker.delqhi.com
+    service: http://172.20.0.82:8020
+    originRequest:
+      noTLSVerify: true
+
+  # ==========================================================================
+  # ROOMS - Infrastructure
+  # ==========================================================================
+  
+  # Room 01 - Dashboard Cockpit (UPDATED: Now using new dashboard-enterprise)
+  - hostname: dashboard.delqhi.com
+    service: http://localhost:3001
+    originRequest:
+      noTLSVerify: true
+
+  # Room 01.1 - SIN-Solver Website (same frontend, host-routed)
+  - hostname: sin-solver.delqhi.com
+    service: http://localhost:3001
+    originRequest:
+      noTLSVerify: true
+
+  # Room 02 - Tresor Secrets (API Brain)
+  - hostname: api.delqhi.com
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+
+  # Room 03 - Archiv Postgres (TCP passthrough)
+  - hostname: postgres.delqhi.com
+    service: tcp://localhost:5432
+
+  # Room 05 - Generator Video
+  - hostname: video.delqhi.com
+    service: http://localhost:8205
+    originRequest:
+      noTLSVerify: true
+
+  # Room 06 - SIN Plugins MCP
+  - hostname: mcp.delqhi.com
+    service: http://localhost:8006
+    originRequest:
+      noTLSVerify: true
+
+  # Room 07 - GitLab Storage Service (Central Media Storage)
+  - hostname: storage.delqhi.com
+    service: http://172.20.0.107:8099
+    originRequest:
+      noTLSVerify: true
+
+  # Room 08 - Postiz Social Media Scheduler
+  - hostname: postiz.delqhi.com
+    service: http://172.20.0.108:5000
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+
+  # Room 09 - Firecrawl Web Scraper
+  - hostname: firecrawl.delqhi.com
+    service: http://172.20.0.109:3002
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 60s
+
+  - hostname: supabase.delqhi.com
+    service: http://92.5.60.87:3004
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+
+  - hostname: api.supabase.delqhi.com
+    service: http://92.5.60.87:8006
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+
+  - hostname: supabase-api.delqhi.com
+    service: http://92.5.60.87:8006
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+
+  # ========================================================================== 
+  # ROOM 13 - Delqhi Social Network Platform
+  # ==========================================================================
+  
+  # Room 13 - Delqhi Network Frontend (Social Media Platform)
+  - hostname: delqhi.delqhi.com
+    service: http://172.20.0.131:3000
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+  
+  # Room 13 - Delqhi Network API
+  - hostname: social-api.delqhi.com
+    service: http://172.20.0.130:3000
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+  
+  # Room 13 - Delqhi Network MCP Server
+  - hostname: social-mcp.delqhi.com
+    service: http://172.20.0.132:8213
+    originRequest:
+      noTLSVerify: true
+  
+  # Room 13 - Delqhi Network Search (Meilisearch)
+  - hostname: social-search.delqhi.com
+    service: http://172.20.0.133:7700
+    originRequest:
+      noTLSVerify: true
+
+  # ==========================================================================
+  # LEGACY ALIASES (backward compatibility)
+  # ==========================================================================
+  
+  - hostname: sin-social.delqhi.com
+    service: http://172.20.0.9:8080
+    originRequest:
+      noTLSVerify: true
+  
+  - hostname: sin-research.delqhi.com
+    service: http://172.20.0.7:3000
+    originRequest:
+      noTLSVerify: true
+  
+  - hostname: sin-video.delqhi.com
+    service: http://172.20.0.205:8205
+    originRequest:
+      noTLSVerify: true
+  
+  - hostname: sin-plugins.delqhi.com
+    service: http://172.20.0.40:8000
+    originRequest:
+      noTLSVerify: true
+
+  # Catch-all for unmatched requests
+  - service: http_status:404
