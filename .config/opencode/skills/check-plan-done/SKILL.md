@@ -200,6 +200,12 @@ Created: [date]
 ## Done Criteria
 - [ ] Criterion
 
+## Sources
+- [ ] Reference link or source path
+
+## Dependencies
+- [ ] Dependent issue ID or blocker
+
 RULES:
 - every task must be concrete and actionable
 - every task must include validation
