@@ -28,36 +28,6 @@
 
 ---
 
-## BUG-20260325-05: Watcher konnte direkt nach manuellem `main.py rotate` sofort selbst noch einmal rotieren
-
-**Aufgetreten:** 2026-03-25  
-**Status:** ✅ GEFIXT
-
-**Symptom:** Nach einem manuellen `python3 main.py rotate` konnte der Watcher unmittelbar danach noch einmal eine zweite Rotation starten, obwohl nach einer gerade beendeten Rotation mindestens ein kurzer Sicherheitsabstand gelten muss.
-
-**Ursache:** Die Watcher-Loop merkte sich `last_rot` nur im eigenen Prozessspeicher. Das deckte nur Rotationen ab, die der Watcher selbst gestartet hatte. Ein manueller `main.py rotate` setzte zwar das gemeinsame Lock waehrend des Laufs, schrieb nach dem Ende aber keinen gemeinsam sichtbaren "rotation fertig"-Zeitpunkt. Sobald das Lock weg war, konnte der Watcher bei einem neuen Trigger sofort wieder loslaufen.
-
-**Fix:** Gemeinsame Rotationszustands-Datei `core/watcher_rotation_state.py` eingefuehrt. Sowohl der manuelle Pfad in `core/main_dispatch.py` als auch die Watcher-Loop in `core/watcher_loop.py` schreiben jetzt nach jeder beendeten Rotation einen gemeinsamen End-Timestamp nach `/tmp/openAntigravity-auth-rotator.last-rotation`. Die Watcher-Loop verwendet diesen Timestamp als `effective_last_rot`, bevor sie eine neue Rotation erlaubt. Live verifiziert: echter manueller Rotate lief erfolgreich durch; anschliessend erschien kein zweiter `Starting rotation`-Eintrag im gefaehrlichen Fenster. Zusaetzlich wurde ein synthetischer `QUOTA_EXHAUSTED`-Trigger in `grace-window-proof.log` erkannt, aber innerhalb des Schutzfensters bewusst nicht erneut gestartet.
-
-**Datei:** `core/watcher_rotation_state.py`, `core/main_dispatch.py`, `core/watcher_loop.py`, `core/watcher_config.py`
-
----
-
-## BUG-20260325-04: `watcher_config.py` mit Merge-Konfliktmarkern blockiert Watcher und `main.py rotate`
-
-**Aufgetreten:** 2026-03-25  
-**Status:** ✅ GEFIXT
-
-**Symptom:** `cd /Users/jeremy/.open-auth-rotator/antigravity && python3 main.py rotate` bricht schon beim Import mit `SyntaxError: invalid decimal literal` in `core/watcher_config.py` ab. Dadurch startet auch der Watcher nicht mehr.
-
-**Ursache:** In `core/watcher_config.py` sind ungeaufloeste Git-Merge-Konfliktmarker (`<<<<<<<`, `=======`, `>>>>>>>`) stehen geblieben. Python parst die Datei deshalb gar nicht mehr.
-
-**Fix:** Konflikt in `core/watcher_config.py` sauber aufgeloest, die gewollten Werte `COOLDOWN_SECS = 30` und `_GOOGLE_AUTH_REINJECT_COOLDOWN = 60` behalten, den doppelten manuell gestarteten Watcher-Prozess entfernt und die LaunchAgent-Instanz als einzige aktive Watcher-Instanz stehen gelassen. Danach bootete `python3 main.py status` wieder sauber.
-
-**Datei:** `core/watcher_config.py`
-
----
-
 ## BUG-XXX: Rotation leert lokale Antigravity-Auth zu frueh vor erfolgreicher Neu-Injektion
 
 **Aufgetreten:** 2026-03-20  
