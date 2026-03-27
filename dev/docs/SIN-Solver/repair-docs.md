@@ -447,8 +447,76 @@
 **Ursache:** `AuthMiddleware` runs as `BaseHTTPMiddleware`, and raising `HTTPException` directly from `dispatch(...)` surfaced as an unhandled ASGI error instead of a normal auth response.
 **Fix:** Replaced the middleware's raised auth exceptions with explicit `JSONResponse` returns for `401` and `503`. Verified on OCI: env-signed token returns `200`, old hardcoded-secret token now returns `401 {"detail":"Invalid token"}`.
 **Datei:** `services/room-13-fastapi-coordinator/room13/middleware/__init__.py`
-**Datei:** `scripts/alpha/generate-capability-registry-seed.mjs`, `services/room-13-fastapi-coordinator/room13/services/alpha_router.py`, `dashboard-enterprise/components/a2a/registry.ts`
 
+## BUG-061: Room-13 `GET /api/services/stats/summary` returns `500` on live OCI coordinator
+**Aufgetreten:** Fri Mar 27 2026  **Status:** 🔴 OFFEN
+**Symptom:** During a live fleet-status audit, `GET /api/workers/stats/summary` and `GET /api/tasks/stats/summary` returned `200`, but `GET /api/services/stats/summary` failed with `500 Internal Server Error`.
+**Ursache:** Noch offen. The service-summary path is currently broken even though worker/task summaries and public health stay readable.
+**Fix:** Noch offen. GitHub bug-library issue opened as `OpenSIN-AI/OpenSIN#274`.
+**Datei:** `http://92.5.60.87:8014/api/services/stats/summary`
+
+## BUG-062: WorkerCoordinatorRuntime could not talk to authenticated Room-13 because bearer auth was missing
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** The canonical Python worker bridge could not register workers, heartbeat leases, or claim tasks against the live OCI Room-13 coordinator after auth enforcement, because every worker request would 401.
+**Ursache:** `services/workers/coordinator_runtime.py` sent trace/run headers only and never attached `Authorization: Bearer ...` from env or runtime config.
+**Fix:** Added bearer-token support to `WorkerCoordinatorRuntime` and verified it live with `scripts/zeus/run-room13-executor.py`: a Team-Coding executor registered successfully, claimed a real `zeus_github_branch` probe task, and completed it on the authenticated OCI coordinator. GitHub bug-library issue `#275` was closed with verification.
+**Datei:** `services/workers/coordinator_runtime.py`, `tests/unit/test_worker_coordinator_runtime.py`, `scripts/zeus/run-room13-executor.py`
+
+## BUG-063: Team-Coding still lacks a durable Zeus/Room-13 coding executor loop
+**Aufgetreten:** Fri Mar 27 2026  **Status:** 🔴 OFFEN
+**Symptom:** Hermes/Room-13 can queue Team-Coding `zeus_github_branch` tasks correctly and the worker bridge can now register/claim them, but there is still no production Team-Coding executor loop that continuously consumes those tasks and turns them into real coding work.
+**Ursache:** `a2a/team-coding` agents define runtime/model metadata, but there is no native long-running Room-13 worker integration under `a2a/team-coding` that maps claimed branch tasks into actual branch/worktree/opencode execution.
+**Fix:** Noch offen. Added a working executor wrapper/probe path via `scripts/zeus/run-room13-executor.py` and tracked the remaining durable-executor gap in GitHub bug-library issue `OpenSIN-AI/OpenSIN#277`.
+**Datei:** `a2a/team-coding/**`, `scripts/zeus/run-room13-executor.py`, `services/workers/coordinator_runtime.py`
+
+## BUG-064: `A2A-SIN-Backend` wrapper failed because the CLI imported a missing HTTP server export
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** `bin/sin-backend run-action '{"action":"sin.backend.health"}'` crashed before the health action ran because the built CLI imported `createTemplateAgentHttpServer` from `./a2a-http.js`, but that module only exposed `runHttpServer()`.
+**Ursache:** Backend CLI wiring had drifted from the actual exports in `a2a-http.ts`, `mcp-server.ts`, and `runtime.ts`.
+**Fix:** Repaired `src/cli.ts` to import the real backend symbols (`runHttpServer`, `runMcpServer`, `executeBackendAgentAction`) and re-verified the wrapper health action successfully. GitHub bug-library issue `#278` was closed.
+**Datei:** `a2a/team-coding/A2A-SIN-Backend/src/cli.ts`, `bin/sin-backend`
+
+## BUG-065: Room-13 `claim-next` could not scope tasks by team and risked cross-team task theft
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** Team-Coding workers could only filter by task type/priority, not by `teamId`, so claiming `zeus_github_branch` work could steal orchestrator, infrastructure, or competition jobs from the same queue.
+**Ursache:** `TaskClaimRequest` and `claim_next_task(...)` only supported `accepted_types` and `min_priority`; no team-aware filter existed in either the Room-13 route or the Python worker runtime.
+**Fix:** Added `accepted_team_ids` to `services/room-13-fastapi-coordinator/room13/routes/tasks.py`, passed it through `services/workers/coordinator_runtime.py`, added route/runtime tests, redeployed Room-13 on OCI, and verified that the Team-Coding executor now claims only Team-Coding tasks. GitHub bug-library issue `#279` was closed.
+**Datei:** `services/room-13-fastapi-coordinator/room13/routes/tasks.py`, `services/workers/coordinator_runtime.py`, `tests/unit/test_room13_task_routes.py`, `tests/unit/test_worker_coordinator_runtime.py`
+
+## BUG-066: Team-Coding agent runtimes broke in worktrees because `hf_pull_script.py` pathing/artifacts were missing
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** Real Team-Coding task execution failed in dedicated worktrees because Backend/Frontend resolved `hf_pull_script.py` to a missing path, and those agents had not actually shipped the required rotator script artifact.
+**Ursache:** Backend and Frontend used a hardcoded relative script path but did not include `scripts/hf_pull_script.py` in their package roots.
+**Fix:** Restored the standard `scripts/hf_pull_script.py` artifact into both agents and resolved the rotator path from the agent root so worktree execution no longer points at a missing file. GitHub bug-library issue `#280` was closed.
+**Datei:** `a2a/team-coding/A2A-SIN-Backend/scripts/hf_pull_script.py`, `a2a/team-coding/A2A-SIN-Frontend/scripts/hf_pull_script.py`, `a2a/team-coding/A2A-SIN-Backend/src/runtime.ts`, `a2a/team-coding/A2A-SIN-Frontend/src/runtime.ts`
+
+## BUG-067: Team-Coding executor design classifier produced false positives
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** The first real non-design Team-Coding task (`[13B-1] Typed memory ledger ...`) was incorrectly routed to `sin-frontend` under the design-only policy.
+**Ursache:** The first classifier pass used naive substring checks across the serialized task payload, so short design tokens could false-match inside unrelated text.
+**Fix:** Switched the executor classifier to token-based matching in `scripts/zeus/run-room13-executor.py`, then verified subsequent Team-Coding tasks route to the backend lane instead of the frontend design lane unless real design keywords are present. GitHub bug-library issue `#281` was closed.
+**Datei:** `scripts/zeus/run-room13-executor.py`
+
+## BUG-068: Backend/Frontend hard-failed on rotator pull instead of degrading to cached auth
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** `sin-backend` / `sin-frontend` code-generation actions aborted immediately when `hf_pull_script.py` exited non-zero, even though cached OpenCode auth may already have been present locally.
+**Ursache:** Backend and Frontend awaited the rotator pull as a hard precondition instead of treating it as best-effort like other coding agents already do.
+**Fix:** Changed both runtimes to continue on rotator failure with a warning and cached auth fallback. GitHub bug-library issue `#282` was closed.
+**Datei:** `a2a/team-coding/A2A-SIN-Backend/src/runtime.ts`, `a2a/team-coding/A2A-SIN-Frontend/src/runtime.ts`
+
+## BUG-069: Room-13 can leave tasks stuck in `running` after worker lease expiry
+**Aufgetreten:** Fri Mar 27 2026  **Status:** 🔴 OFFEN
+**Symptom:** When the executor process died mid-task, the worker lease expired but the claimed task remained in `running` instead of returning to a recoverable queue state automatically.
+**Ursache:** Room-13 tracks expired leases and resumable worker state, but there is no automatic task-state recovery path for claimed tasks whose worker disappears.
+**Fix:** Noch offen. Manual queue repair was required (`complete?error=...`) and the gap is tracked in GitHub bug-library issue `OpenSIN-AI/OpenSIN#289`.
+**Datei:** `services/room-13-fastapi-coordinator/room13/routes/tasks.py`, `services/room-13-fastapi-coordinator/room13/routes/workers.py`
+
+## BUG-070: Durable executor can still drift into unrelated `AGENTS.md` edits
+**Aufgetreten:** Fri Mar 27 2026  **Status:** 🔴 OFFEN
+**Symptom:** During live Team-Coding execution, the current worktrees repeatedly showed only `AGENTS.md` changes instead of obvious progress on the claimed implementation surface.
+**Ursache:** The executor prompt originally did not explicitly forbid unrelated governance/doc edits for non-policy tasks, and even after hardening there is still unresolved drift behavior to investigate in the live lane.
+**Fix:** Partially mitigated by adding an explicit prompt guard that forbids `AGENTS.md` / README / repair-doc edits for non-doc tasks. Remaining drift is tracked in GitHub bug-library issue `OpenSIN-AI/OpenSIN#290`.
+**Datei:** `scripts/zeus/run-room13-executor.py`, executor worktrees under `.room13-worktrees/`
 ## BUG-042: Parent issue update failed because inline Python heredoc string was not terminated correctly
 **Aufgetreten:** Tue Mar 24 2026  **Status:** ✅ GEFIXT
 **Symptom:** Updating issue `#351` with the submit-ready status for lane `#352` failed before the `gh issue comment` call because the temporary Python snippet writing `/tmp/issue351_submit_ready.md` had an unterminated triple-quoted string, causing a `SyntaxError` and leaving the body file empty.
@@ -559,3 +627,17 @@
 **Ursache:** Die gepatchten `create-a2a-team`/`create-sin-a2a-agent`-Workflows provisionieren Repo/Verzeichnis, aber synchronisieren die vollständigen Template-Artefakte nicht zuverlässig in lokale und entfernte Lawyer-Scaffolds.
 **Fix:** Noch offen. Kurzfristig werden Lawyer-Spezialisten manuell aus dem funktionsfähigen Paragraph-Muster abgeleitet; mittelfristig müssen die Generatoren den kompletten Template-Root zuverlässig materialisieren und pushen.
 **Datei:** `a2a/team-lawyer/A2A-SIN-Summary`, `a2a/team-lawyer/A2A-SIN-Team-lawyer`, Generatorpfade `~/.config/opencode/skills/create-a2a-team/scripts/generate-team.sh`, `scripts/create-sin-a2a-agent.mjs`
+
+## BUG-027: A2A-SIN-Damages runtime build brach wegen `null`-Notes im Schadenspacket ab
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** `npm run build` in `a2a/team-lawyer/A2A-SIN-Damages` schlug fehl, weil `compute_damage_packet` normalisierte Items mit `note: null` erzeugte, obwohl `DamageItem.note` nur `string | undefined` erlaubte.
+**Ursache:** Die neue Runtime-Implementierung normalisierte optionale Schadensnotizen inkonsistent und verletzte dadurch den TypeScript-Vertrag des internen `DamageItem`-Typs.
+**Fix:** Normalisierung auf `undefined` statt `null` umgestellt und die Runtime anschließend erfolgreich neu gebaut.
+**Datei:** `a2a/team-lawyer/A2A-SIN-Damages/src/runtime.ts`
+
+## BUG-029: A2A-SIN-Contract klassifizierte Zutrittsklauseln faelschlich als Zahlungsklauseln
+**Aufgetreten:** Fri Mar 27 2026  **Status:** ✅ GEFIXT
+**Symptom:** `sin.contract.analyze_contract` stufte die Klausel „Der Vermieter darf die Wohnung jederzeit ohne Vorankündigung betreten.“ wegen des Substrings `miete` in `Vermieter` als `Zahlung` statt `Zutritt` ein.
+**Ursache:** Die Clause-Type-Heuristik prüfte zu breite Teilstrings (`/miete/`) und matchte dadurch unbeabsichtigt auf `Vermieter`.
+**Fix:** Heuristik auf trennschärfere Wort-/Kontextmuster angepasst und die Auswertung anschließend erneut verifiziert.
+**Datei:** `a2a/team-lawyer/A2A-SIN-Contract/src/runtime.ts`
