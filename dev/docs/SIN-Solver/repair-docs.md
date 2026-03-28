@@ -554,10 +554,10 @@
 **Datei:** `a2a/team-coding/A2A-SIN-Backend/src/runtime.ts`, `a2a/team-coding/A2A-SIN-Frontend/src/runtime.ts`, `bin/sin-backend`, `bin/sin-frontend`
 
 ## BUG-076: Lower-level Node transport path can still stall on OpenCode child execution
-**Aufgetreten:** Sat Mar 28 2026  **Status:** 🔴 OFFEN
-**Symptom:** A direct Node transport path (`execFileAsync`/runtime-level invocation) can still stall even though the same prompt completes under raw `opencode run` or the per-agent Python runner.
-**Ursache:** Noch offen. Evidence shows the product paths are fixed by bypassing the Node transport, but the lower-level Node child-process interaction itself still appears flaky for long-running OpenCode calls.
-**Fix:** Mitigated in product paths by the Python runner transport in the durable executor and in the standalone shell wrappers. Remaining low-level cleanup is tracked in GitHub bug-library issue `#317`.
+**Aufgetreten:** Sat Mar 28 2026  **Status:** ✅ GEFIXT
+**Symptom:** A direct Node transport path (`execFileAsync`/runtime-level invocation) could stall even though the same prompt completed under raw `opencode run` or the per-agent Python runner.
+**Ursache:** The per-agent Python runner inherited the live stdin pipe from the Node parent process when launched under the Node runtime path, which was enough to reproduce the hang. Direct shell/Python runs without that inherited stdin completed successfully.
+**Fix:** Updated both `a2a/team-coding/A2A-SIN-Backend/scripts/run_opencode.py` and `a2a/team-coding/A2A-SIN-Frontend/scripts/run_opencode.py` to launch `opencode` with `stdin=subprocess.DEVNULL`. Verified with all four paths: standalone backend Node CLI, standalone frontend Node CLI, `bin/sin-backend`, and `bin/sin-frontend` now all return `0` with `expertAnalysis: "OK\n"`. GitHub bug-library issue `#317` was closed.
 **Datei:** `a2a/team-coding/A2A-SIN-Backend/src/runtime.ts`, `a2a/team-coding/A2A-SIN-Frontend/src/runtime.ts`
 ## BUG-042: Parent issue update failed because inline Python heredoc string was not terminated correctly
 **Aufgetreten:** Tue Mar 24 2026  **Status:** ✅ GEFIXT
