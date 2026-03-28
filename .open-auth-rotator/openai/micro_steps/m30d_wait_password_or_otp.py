@@ -11,6 +11,8 @@ async def run():
             tab
             for tab in b.tabs
             if "auth.openai" in getattr(tab, "url", getattr(tab.target, "url", ""))
+            or "email-verification"
+            in getattr(tab, "url", getattr(tab.target, "url", ""))
         ),
         None,
     )

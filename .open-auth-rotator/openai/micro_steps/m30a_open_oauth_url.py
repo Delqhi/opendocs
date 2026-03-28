@@ -25,9 +25,7 @@ async def run():
     for t in b.tabs:
         curr = getattr(t, "url", getattr(t.target, "url", "")) or ""
         if (
-            ("openai.com" in curr or "chatgpt.com" in curr)
-            and "auth.openai" not in curr
-            and "email-verification" not in curr
+            ("openai.com" in curr or "chatgpt.com" in curr) and not any(x in curr for x in ["auth.openai", "email-verification", "log-in", "chatgpt.com/auth"])
         ):
             try:
                 await t.close()
