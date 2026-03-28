@@ -547,11 +547,18 @@
 **Datei:** `a2a/team-coding/A2A-SIN-Backend/src/a2a-http.ts`, `a2a/team-coding/A2A-SIN-Backend/src/idle-monetization.ts`
 
 ## BUG-075: Standalone Team-Coding wrappers still hang on `code.generate` despite stable executor path
-**Aufgetreten:** Sat Mar 28 2026  **Status:** 🔴 OFFEN
-**Symptom:** `bin/sin-backend run-action '{"action":"sin.backend.code.generate",...}'` and the equivalent frontend wrapper still hang until the local caller timeout, even though raw `opencode run ... --agent sin-executor-solo` works and the durable executor path can now use the direct Python runner transport safely.
-**Ursache:** Noch offen. Current evidence points to the standalone Node wrapper transport path, while the durable executor now bypasses that path successfully by calling the Python OpenCode runner directly.
-**Fix:** Noch offen. GitHub bug-library issues `#315` and `#317` remain open; current mitigation is the direct Python runner path in `scripts/zeus/run-room13-executor.py`.
+**Aufgetreten:** Sat Mar 28 2026  **Status:** ✅ GEFIXT
+**Symptom:** `bin/sin-backend run-action '{"action":"sin.backend.code.generate",...}'` and the equivalent frontend wrapper hung until the local caller timeout, even though raw `opencode run ... --agent sin-executor-solo` worked and the durable executor path could use the direct Python runner transport safely.
+**Ursache:** The standalone wrappers still delegated `code.generate` / `code.review` into the hanging Node runtime transport path instead of using the stable direct Python OpenCode runner.
+**Fix:** Added a shell-wrapper fast path in `bin/sin-backend` and `bin/sin-frontend` that short-circuits `run-action` for `code.generate` / `code.review` through the per-agent Python OpenCode runner. Verified: backend wrapper returned `0` in ~95s and frontend wrapper returned `0` in ~75s with JSON `expertAnalysis: "OK\n"`. GitHub bug-library issue `#315` was closed.
 **Datei:** `a2a/team-coding/A2A-SIN-Backend/src/runtime.ts`, `a2a/team-coding/A2A-SIN-Frontend/src/runtime.ts`, `bin/sin-backend`, `bin/sin-frontend`
+
+## BUG-076: Lower-level Node transport path can still stall on OpenCode child execution
+**Aufgetreten:** Sat Mar 28 2026  **Status:** 🔴 OFFEN
+**Symptom:** A direct Node transport path (`execFileAsync`/runtime-level invocation) can still stall even though the same prompt completes under raw `opencode run` or the per-agent Python runner.
+**Ursache:** Noch offen. Evidence shows the product paths are fixed by bypassing the Node transport, but the lower-level Node child-process interaction itself still appears flaky for long-running OpenCode calls.
+**Fix:** Mitigated in product paths by the Python runner transport in the durable executor and in the standalone shell wrappers. Remaining low-level cleanup is tracked in GitHub bug-library issue `#317`.
+**Datei:** `a2a/team-coding/A2A-SIN-Backend/src/runtime.ts`, `a2a/team-coding/A2A-SIN-Frontend/src/runtime.ts`
 ## BUG-042: Parent issue update failed because inline Python heredoc string was not terminated correctly
 **Aufgetreten:** Tue Mar 24 2026  **Status:** ✅ GEFIXT
 **Symptom:** Updating issue `#351` with the submit-ready status for lane `#352` failed before the `gh issue comment` call because the temporary Python snippet writing `/tmp/issue351_submit_ready.md` had an unterminated triple-quoted string, causing a `SyntaxError` and leaving the body file empty.
