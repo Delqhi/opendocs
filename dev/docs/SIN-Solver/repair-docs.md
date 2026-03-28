@@ -559,6 +559,13 @@
 **Ursache:** The per-agent Python runner inherited the live stdin pipe from the Node parent process when launched under the Node runtime path, which was enough to reproduce the hang. Direct shell/Python runs without that inherited stdin completed successfully.
 **Fix:** Updated both `a2a/team-coding/A2A-SIN-Backend/scripts/run_opencode.py` and `a2a/team-coding/A2A-SIN-Frontend/scripts/run_opencode.py` to launch `opencode` with `stdin=subprocess.DEVNULL`. Verified with all four paths: standalone backend Node CLI, standalone frontend Node CLI, `bin/sin-backend`, and `bin/sin-frontend` now all return `0` with `expertAnalysis: "OK\n"`. GitHub bug-library issue `#317` was closed.
 **Datei:** `a2a/team-coding/A2A-SIN-Backend/src/runtime.ts`, `a2a/team-coding/A2A-SIN-Frontend/src/runtime.ts`
+
+## BUG-077: Room-13 showed idle long-lived Team-Coding executors as `busy`
+**Aufgetreten:** Sat Mar 28 2026  **Status:** ✅ GEFIXT
+**Symptom:** Live Team-Coding executors could hold active leases and repeatedly receive `claim-next -> 404 No matching task available`, yet still appear in Room-13 as `busy` with `claimed_task_id: null`.
+**Ursache:** Worker runtime state treated a non-empty `current_run_id` as proof of active work. Long-lived service executors keep `current_run_id` for the full process lifetime, so the server continued marking them `busy` even when no task was claimed.
+**Fix:** Changed worker runtime state transitions so only a real `claimed_task_id` keeps the worker `busy`; otherwise the worker returns to `online` / `idle_waiting_for_task`. Verified live after redeploy and clean restart: `workers/stats/summary` now shows `busy: 0`, `online: 3`, and the active Team-Coding worker is `status: online`, `claimed_task_id: null`, `status_reason: idle_waiting_for_task`. GitHub bug-library issue `#320` was closed.
+**Datei:** `services/room-13-fastapi-coordinator/room13/services/worker_runtime.py`, `tests/unit/test_room13_worker_routes.py`
 ## BUG-042: Parent issue update failed because inline Python heredoc string was not terminated correctly
 **Aufgetreten:** Tue Mar 24 2026  **Status:** ✅ GEFIXT
 **Symptom:** Updating issue `#351` with the submit-ready status for lane `#352` failed before the `gh issue comment` call because the temporary Python snippet writing `/tmp/issue351_submit_ready.md` had an unterminated triple-quoted string, causing a `SyntaxError` and leaving the body file empty.
