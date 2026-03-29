@@ -9,16 +9,32 @@ async def run():
     b = await uc.start(host="127.0.0.1", port=9334)
     t = next(
         (
-            tab for tab in b.tabs
-            if any(x in getattr(tab, "url", getattr(tab.target, "url", "")) for x in ["auth.openai", "email-verification", "log-in", "chatgpt.com/auth"])
+            tab
+            for tab in b.tabs
+            if any(
+                x in getattr(tab, "url", getattr(tab.target, "url", ""))
+                for x in ["log-in", "auth.openai", "chatgpt.com/auth"]
+            )
         ),
         None,
     )
     if not t:
         print("M30b FAIL: Kein log-in Tab.")
         return False
-    with open("/tmp/current_email.txt", "r") as f:
-        email = f.read().strip()
+    try:
+        with open("/tmp/current_email.txt", "r") as f:
+            email = f.read().strip()
+    except FileNotFoundError:
+        email = (
+            await t.evaluate("""(function(){
+            var inp = document.querySelector('input[type="email"], input[name="email"]');
+            return inp ? inp.value : '';
+        })()""")
+            or ""
+        )
+        if not email:
+            print("M30b FAIL: Email nicht verfuegbar.")
+            return False
     await t.evaluate("""(function(){
         var inp = document.querySelector('input[type="email"], input[name="email"]');
         if(inp) { inp.value=''; inp.focus(); }
