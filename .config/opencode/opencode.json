@@ -2,9 +2,11 @@
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
     "opencode-antigravity-auth@1.6.5-beta.0",
-    "oh-my-opencode@3.11.2"
+    "oh-my-opencode@3.11.2",
+    "opencode-qwencode-auth",
+    "opencode-openrouter-auth"
   ],
-  "model": "openai/gpt-5.4",
+  "model": "opencode/qwen3.6-plus-free",
   "provider": {
     "google": {
       "options": {
@@ -222,6 +224,64 @@
           }
         }
       }
+    },
+    "openrouter": {
+      "npm": "@openrouter/ai-sdk-provider",
+      "options": {
+        "apiKey": "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",
+        "baseURL": "https://openrouter.ai/api/v1"
+      },
+      "models": {
+        "qwen/qwen3-coder": {
+          "name": "Qwen 3 Coder (Free)",
+          "limit": {
+            "context": 65536,
+            "output": 16384
+          }
+        },
+        "qwen/qwen3.5-coder": {
+          "name": "Qwen 3.5 Coder (Free)",
+          "limit": {
+            "context": 65536,
+            "output": 16384
+          }
+        },
+        "deepseek/deepseek-chat-v3-0324:free": {
+          "name": "DeepSeek V3 0324 (Free)",
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          }
+        },
+        "deepseek/deepseek-r1:free": {
+          "name": "DeepSeek R1 (Free)",
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          }
+        },
+        "google/gemini-2.5-flash-preview:free": {
+          "name": "Gemini 2.5 Flash (Free)",
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        },
+        "meta-llama/llama-4-maverick:free": {
+          "name": "Llama 4 Maverick (Free)",
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          }
+        },
+        "microsoft/phi-4:free": {
+          "name": "Phi-4 (Free)",
+          "limit": {
+            "context": 16384,
+            "output": 4096
+          }
+        }
+      }
     }
   },
   "mcp": {
@@ -311,7 +371,7 @@
     "sin-google-apps": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-google-apps-mcp"
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-google-apps-mcp"
       ],
       "environment": {
         "SIN_GOOGLE_APPS_HOST": "127.0.0.1",
@@ -323,7 +383,7 @@
     "sin-server": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-server",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-server",
         "serve-mcp"
       ],
       "enabled": true
@@ -331,7 +391,7 @@
     "sin-cloudflare": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-cloudflare",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-cloudflare",
         "serve-mcp"
       ],
       "enabled": true
@@ -340,7 +400,7 @@
       "type": "local",
       "command": [
         "node",
-        "/Users/jeremy/dev/SIN-Solver/a2a/team-infratructur/A2A-SIN-Passwordmanager/dist/src/cli.js",
+        "/Users/jeremy/dev/OpenSIN-backend/a2a/team-infratructur/A2A-SIN-Passwordmanager/dist/src/cli.js",
         "serve-mcp"
       ],
       "environment": {
@@ -352,7 +412,7 @@
     "sin-research": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-research",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-research",
         "serve-mcp"
       ],
       "enabled": true
@@ -360,7 +420,7 @@
     "sin-team-worker": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-team-worker",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-team-worker",
         "serve-mcp"
       ],
       "enabled": true
@@ -368,7 +428,7 @@
     "sin-tiktok": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-tiktok",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-tiktok",
         "serve-mcp"
       ],
       "enabled": true
@@ -376,7 +436,7 @@
     "sin-tiktok-shop": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-tiktok-shop",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-tiktok-shop",
         "serve-mcp"
       ],
       "enabled": true
@@ -384,7 +444,7 @@
     "sin-terminal": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-terminal",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-terminal",
         "serve-mcp"
       ],
       "enabled": true
@@ -410,7 +470,7 @@
     "sin-authenticator": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-authenticator",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-authenticator",
         "serve-mcp"
       ],
       "environment": {
@@ -425,7 +485,7 @@
     "sin-github-issues": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-github-issues",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-github-issues",
         "serve-mcp"
       ],
       "enabled": true
@@ -433,7 +493,7 @@
     "sin-oraclecloud-mcp": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-oraclecloud-mcp",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-oraclecloud-mcp",
         "serve-mcp"
       ],
       "enabled": true
@@ -463,7 +523,7 @@
     "sin-summary": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-summary",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-summary",
         "serve-mcp"
       ],
       "enabled": true
@@ -471,71 +531,79 @@
     "sin-paragraph": {
       "type": "local",
       "command": [
-        "/Users/jeremy/dev/SIN-Solver/bin/sin-paragraph",
+        "/Users/jeremy/dev/OpenSIN-backend/bin/sin-paragraph",
         "serve-mcp"
+      ],
+      "enabled": true
+    },
+    "colab": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "git+https://github.com/googlecolab/colab-mcp"
       ],
       "enabled": true
     }
   },
   "agent": {
     "Atlas (Plan Executor)": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "Hephaestus (Deep Agent)": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "Metis (Plan Consultant)": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "Momus (Plan Critic)": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "Prometheus (Plan Builder)": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "Sisyphus (Ultraworker)": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "Sisyphus-Junior (Fast-Ultraworker)": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "medium"
       },
       "steps": 999999
     },
     "artistry": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "build": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
@@ -548,21 +616,21 @@
       "steps": 999999
     },
     "explore": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "low"
       },
       "steps": 999999
     },
     "general": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "medium"
       },
       "steps": 999999
     },
     "librarian": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "low"
       },
@@ -577,14 +645,14 @@
       "description": "Zero-Shot Object Detection & Vision Understanding via NVIDIA NIM"
     },
     "oracle": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
       "steps": 999999
     },
     "plan": {
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
@@ -613,7 +681,7 @@
     },
     "sin-zeus": {
       "mode": "primary",
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "high"
       },
@@ -623,7 +691,7 @@
     },
     "sin-executor-solo": {
       "mode": "primary",
-      "model": "openai/gpt-5.4",
+      "model": "opencode/qwen3.6-plus-free",
       "options": {
         "reasoningEffort": "medium"
       },
@@ -656,7 +724,7 @@
     },
     "omoc-autostart": {
       "description": "Auto-bind swarm + start JAM guidance",
-      "template": "OMOC Autostart (keine Erklaerungen):\n\n1) ⚙ swarm_discover({ id: \"$ARGUMENTS\" })\n2) ⚙ swarm_jam({ id: \"$ARGUMENTS\", prompt: \"OMOC JAM Autostart: Koordiniert euch als Swarm (planner/researcher/coder/reviewer). Arbeitet kollaborativ im selben Worktree. Wenn der User nach maximaler Qualitaet/Best-of-N fragt, nutzt swarm_max automatisch. Warte ansonsten auf die naechste konkrete Aufgabe.\" })\n\nDanach: schreibe exakt: OMOC ready"
+      "template": "OMOC Autostart (keine Erklaerungen):\n\n1) \u2699 swarm_discover({ id: \"$ARGUMENTS\" })\n2) \u2699 swarm_jam({ id: \"$ARGUMENTS\", prompt: \"OMOC JAM Autostart: Koordiniert euch als Swarm (planner/researcher/coder/reviewer). Arbeitet kollaborativ im selben Worktree. Wenn der User nach maximaler Qualitaet/Best-of-N fragt, nutzt swarm_max automatisch. Warte ansonsten auf die naechste konkrete Aufgabe.\" })\n\nDanach: schreibe exakt: OMOC ready"
     },
     "sin-terminal-orchestrate": {
       "description": "Use SIN-Terminal to open and steer parallel visible OpenCode sessions",
@@ -676,15 +744,18 @@
     },
     "sin-zeus-bootstrap": {
       "description": "Create GitHub Project and issue pool from a Zeus ultra-plan JSON",
-      "template": "Wenn $ARGUMENTS leer ist, erklaere das JSON-Format `{ \"owner\": \"...\", \"repo\": \"owner/repo\", \"title\": \"...\", \"planFile\": \"scripts/zeus/ultra-plan.example.json\", \"base\": \"main\", \"dryRun\": true }`. Sonst parse $ARGUMENTS als JSON und nutze `bash` um `node /Users/jeremy/dev/SIN-Solver/scripts/zeus/bootstrap-github-project.mjs --owner <owner> --repo <repo> --title <title> --plan-file <planFile> --base <base>` auszufuehren; wenn `dryRun` true ist, haenge `--dry-run` an."
+      "template": "Wenn $ARGUMENTS leer ist, erklaere das JSON-Format `{ \"owner\": \"...\", \"repo\": \"owner/repo\", \"title\": \"...\", \"planFile\": \"scripts/zeus/ultra-plan.example.json\", \"base\": \"main\", \"dryRun\": true }`. Sonst parse $ARGUMENTS als JSON und nutze `bash` um `node /Users/jeremy/dev/OpenSIN-backend/scripts/zeus/bootstrap-github-project.mjs --owner <owner> --repo <repo> --title <title> --plan-file <planFile> --base <base>` auszufuehren; wenn `dryRun` true ist, haenge `--dry-run` an."
     },
     "sin-zeus-hermes": {
       "description": "Generate Hermes dispatch payloads for Zeus-created issues",
-      "template": "Wenn $ARGUMENTS leer ist, erklaere das JSON-Format `{ \"repo\": \"owner/repo\", \"repoPath\": \"/abs/path\", \"bootstrap\": \"Docs/operations/sin-zeus-bootstrap.json\" }`. Sonst parse $ARGUMENTS als JSON und nutze `bash` um `node /Users/jeremy/dev/SIN-Solver/scripts/zeus/hermes-dispatch.mjs --repo <repo> --repo-path <repoPath> --bootstrap <bootstrap>` auszufuehren."
+      "template": "Wenn $ARGUMENTS leer ist, erklaere das JSON-Format `{ \"repo\": \"owner/repo\", \"repoPath\": \"/abs/path\", \"bootstrap\": \"Docs/operations/sin-zeus-bootstrap.json\" }`. Sonst parse $ARGUMENTS als JSON und nutze `bash` um `node /Users/jeremy/dev/OpenSIN-backend/scripts/zeus/hermes-dispatch.mjs --repo <repo> --repo-path <repoPath> --bootstrap <bootstrap>` auszufuehren."
     },
     "sin-zeus-status": {
       "description": "Summarize current Zeus control-plane artifacts",
-      "template": "Nutze `bash` um, falls vorhanden, diese Dateien zu lesen: `/Users/jeremy/dev/SIN-Solver/Docs/operations/sin-zeus-bootstrap.json`, `/Users/jeremy/dev/SIN-Solver/Docs/operations/sin-hermes-dispatch.json`, `/Users/jeremy/dev/SIN-Solver/Docs/operations/alpha-acceptance-gates.json`. Fasse das Ergebnis kompakt zusammen."
+      "template": "Nutze `bash` um, falls vorhanden, diese Dateien zu lesen: `/Users/jeremy/dev/OpenSIN-backend/Docs/operations/sin-zeus-bootstrap.json`, `/Users/jeremy/dev/OpenSIN-backend/Docs/operations/sin-hermes-dispatch.json`, `/Users/jeremy/dev/OpenSIN-backend/Docs/operations/alpha-acceptance-gates.json`. Fasse das Ergebnis kompakt zusammen."
     }
+  },
+  "skills": {
+    "sin-vision-colab": {}
   }
 }

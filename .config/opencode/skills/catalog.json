@@ -1,5 +1,13 @@
 [
   {
+    "slug": "anonymous",
+    "name": "Anonymous",
+    "title": "Anonymous",
+    "description": "Provides browser automation capabilities via the webauto-nodriver-mcp server. Enables agents to perform web interactions, UI automation, and cross-platform tasks using nodriver with stealth capabilities.",
+    "source": "/Users/jeremy/.config/opencode/skills/anonymous",
+    "destination": "/Users/jeremy/.config/opencode/skills/anonymous"
+  },
+  {
     "slug": "browser-crashtest-lab",
     "name": "browser-crashtest-lab",
     "title": "Browser Crashtest Lab",
@@ -30,6 +38,14 @@
     "description": "Use when the task involves reading, creating, or editing `.docx` documents, especially when formatting or layout fidelity matters; prefer `python-docx` plus the bundled `scripts/render_docx.py` for visual checks.",
     "source": "/Users/jeremy/.config/opencode/skills/doc",
     "destination": "/Users/jeremy/.config/opencode/skills/doc"
+  },
+  {
+    "slug": "enterprise-deep-debug",
+    "name": "enterprise-deep-debug",
+    "title": "Enterprise Deep Debug",
+    "description": "Ultimate enterprise debugging workflow: facts-first RCA, cross-tool intent discovery, parallel subagents, web validation, minimal safe fix, and persistent knowledge flush.",
+    "source": "/Users/jeremy/.config/opencode/skills/enterprise-deep-debug",
+    "destination": "/Users/jeremy/.config/opencode/skills/enterprise-deep-debug"
   },
   {
     "slug": "imagegen",
@@ -71,7 +87,6 @@
     "source": "/Users/jeremy/.config/opencode/skills/pdf",
     "destination": "/Users/jeremy/.config/opencode/skills/pdf"
   },
-
   {
     "slug": "sin-a2a-agent-forge",
     "name": "sin-a2a-agent-forge",
@@ -97,11 +112,19 @@
     "destination": "/Users/jeremy/.config/opencode/skills/vercel-deploy"
   },
   {
-    "slug": "enterprise-deep-debug",
-    "name": "enterprise-deep-debug",
-    "title": "Enterprise Deep Debug",
-    "description": "Ultimate enterprise debugging workflow: facts-first RCA, cross-tool intent discovery, parallel subagents, web validation, minimal safe fix, and persistent knowledge flush.",
-    "source": "/Users/jeremy/.config/opencode/skills/enterprise-deep-debug",
-    "destination": "/Users/jeremy/.config/opencode/skills/enterprise-deep-debug"
+    "slug": "sin-vision-colab",
+    "name": "sin-vision-colab",
+    "title": "A2A-SIN-Vision-Colab",
+    "description": "Screen recording + AI vision analysis via google-colab-ai. Any agent can record screen, capture screenshots, and get AI analysis through Colab's free Gemini models. NO API KEY NEEDED — uses Google account auth.",
+    "source": "/Users/jeremy/.config/opencode/skills/sin-vision-colab",
+    "destination": "/Users/jeremy/.config/opencode/skills/sin-vision-colab"
+  },
+  {
+    "slug": "create-auth-plugin",
+    "name": "create-auth-plugin",
+    "title": "Create Auth Plugin",
+    "description": "Build, debug, and deploy OpenCode auth plugins for any LLM provider (DeepSeek, Mistral, xAI, etc.). Covers the full lifecycle from scaffold to cache injection to token rotation watcher integration. Use when creating a new auth plugin or fixing a broken one.",
+    "source": "/Users/jeremy/.config/opencode/skills/create-auth-plugin",
+    "destination": "/Users/jeremy/.config/opencode/skills/create-auth-plugin"
   }
 ]

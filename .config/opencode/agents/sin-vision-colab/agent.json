@@ -1,0 +1,71 @@
+{
+  "id": "a2a-sin-vision-colab",
+  "name": "A2A-SIN-Vision-Colab",
+  "version": "3.0.0",
+  "description": "Screen recording + AI vision analysis via official Google Colab MCP Server. 100% Headless. No browser automation. Uses Gemini via google-colab-ai natively.",
+  "team": "Team - Infrastructure",
+  "manager": "SIN-Zeus",
+  "status": "production-ready",
+  "capabilities": [
+    "screen_recording",
+    "screenshot_capture",
+    "vision_analysis",
+    "mcp_colab_integration",
+    "gemini_vision",
+    "supabase_logging",
+    "continuous_monitoring"
+  ],
+  "models": {
+    "primary": "google/gemini-2.5-pro (via Colab MCP / google-colab-ai)",
+    "fallback": "google/gemini-2.5-flash (via Colab MCP / google-colab-ai)"
+  },
+  "endpoints": {
+    "cli": "~/.local/bin/look-screen"
+  },
+  "infrastructure": {
+    "vm_type": "google_colab_free_tier",
+    "integration": "Colab MCP Server (SOTA 2026)",
+    "browser_automation": "NONE (Purged due to Chrome 146+ restrictions)"
+  },
+  "environment": {
+    "required": ["colab-mcp-server active in OpenCode"],
+    "optional": [
+      "VISION_SUPABASE_URL",
+      "VISION_SUPABASE_KEY"
+    ]
+  },
+  "marketplace": {
+    "pricingModel": "free",
+    "monthlyPrice": 0,
+    "purchaseModes": ["auto-include"]
+  },
+  "skills": ["sin-vision-colab"],
+  "mcp_servers": ["colab-mcp-server"],
+  "cli_commands": {
+    "look-screen --status": "Show vision backend status (MCP native)",
+    "look-screen --screenshot /tmp/screen.png --describe": "Analyze screenshot via MCP",
+    "look-screen --once --screenshot /tmp/screen.png": "One-shot analysis via MCP",
+    "look-screen --interval 3": "Continuous monitoring via MCP",
+    "look-screen --record": "Start screen recording",
+    "look-screen --stop": "Stop screen recording"
+  },
+  "agent_card": {
+    "identity": {
+      "name": "A2A-SIN-Vision-Colab",
+      "version": "3.0.0",
+      "description": "SOTA 2026 Vision Agent using Colab MCP Server"
+    },
+    "capabilities": [
+      {
+        "name": "screen_record",
+        "description": "Record screen and capture screenshots"
+      },
+      {
+        "name": "vision_analyze",
+        "description": "Analyze screenshots via Colab MCP Server and Gemini"
+      }
+    ],
+    "default_input_modes": ["text", "image"],
+    "default_output_modes": ["text"]
+  }
+}
