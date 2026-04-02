@@ -535,14 +535,6 @@
         "serve-mcp"
       ],
       "enabled": true
-    },
-    "colab": {
-      "type": "local",
-      "command": [
-        "uvx",
-        "git+https://github.com/googlecolab/colab-mcp"
-      ],
-      "enabled": true
     }
   },
   "agent": {

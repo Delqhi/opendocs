@@ -1,8 +1,8 @@
 {
   "id": "a2a-sin-vision-colab",
   "name": "A2A-SIN-Vision-Colab",
-  "version": "3.0.0",
-  "description": "Screen recording + AI vision analysis via official Google Colab MCP Server. 100% Headless. No browser automation. Uses Gemini via google-colab-ai natively.",
+  "version": "4.0.0",
+  "description": "Screen recording + AI vision analysis via direct Gemini REST API. No browser, no Colab MCP, no CDP. 6-model fallback chain for unlimited free-tier vision calls.",
   "team": "Team - Infrastructure",
   "manager": "SIN-Zeus",
   "status": "production-ready",
@@ -10,25 +10,32 @@
     "screen_recording",
     "screenshot_capture",
     "vision_analysis",
-    "mcp_colab_integration",
-    "gemini_vision",
+    "gemini_rest_api",
+    "multi_model_fallback",
     "supabase_logging",
     "continuous_monitoring"
   ],
   "models": {
-    "primary": "google/gemini-2.5-pro (via Colab MCP / google-colab-ai)",
-    "fallback": "google/gemini-2.5-flash (via Colab MCP / google-colab-ai)"
+    "primary": "gemini-2.5-flash (via REST API)",
+    "fallback_chain": [
+      "gemini-2.5-flash",
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-lite-preview",
+      "gemma-3-27b",
+      "gemma-3-12b",
+      "gemma-3-4b"
+    ]
   },
   "endpoints": {
     "cli": "~/.local/bin/look-screen"
   },
   "infrastructure": {
-    "vm_type": "google_colab_free_tier",
-    "integration": "Colab MCP Server (SOTA 2026)",
-    "browser_automation": "NONE (Purged due to Chrome 146+ restrictions)"
+    "vm_type": "none (pure REST)",
+    "integration": "Gemini REST API (generativelanguage.googleapis.com)",
+    "browser_automation": "NONE"
   },
   "environment": {
-    "required": ["colab-mcp-server active in OpenCode"],
+    "required": ["GEMINI_VISION_API_KEY (default: AIzaSyCnRoGEoQJBAVssEu6BP1ojSBzIwV5r8_o)"],
     "optional": [
       "VISION_SUPABASE_URL",
       "VISION_SUPABASE_KEY"
@@ -40,20 +47,20 @@
     "purchaseModes": ["auto-include"]
   },
   "skills": ["sin-vision-colab"],
-  "mcp_servers": ["colab-mcp-server"],
+  "mcp_servers": [],
   "cli_commands": {
-    "look-screen --status": "Show vision backend status (MCP native)",
-    "look-screen --screenshot /tmp/screen.png --describe": "Analyze screenshot via MCP",
-    "look-screen --once --screenshot /tmp/screen.png": "One-shot analysis via MCP",
-    "look-screen --interval 3": "Continuous monitoring via MCP",
+    "look-screen --status": "Show vision backend status (Gemini REST)",
+    "look-screen --screenshot /tmp/screen.png --describe": "Analyze screenshot via Gemini REST API",
+    "look-screen --once --screenshot /tmp/screen.png": "One-shot analysis via Gemini REST API",
+    "look-screen --interval 3": "Continuous monitoring via Gemini REST API",
     "look-screen --record": "Start screen recording",
     "look-screen --stop": "Stop screen recording"
   },
   "agent_card": {
     "identity": {
       "name": "A2A-SIN-Vision-Colab",
-      "version": "3.0.0",
-      "description": "SOTA 2026 Vision Agent using Colab MCP Server"
+      "version": "4.0.0",
+      "description": "SOTA 2026 Vision Agent using direct Gemini REST API with 6-model fallback chain"
     },
     "capabilities": [
       {
@@ -62,7 +69,7 @@
       },
       {
         "name": "vision_analyze",
-        "description": "Analyze screenshots via Colab MCP Server and Gemini"
+        "description": "Analyze screenshots via Gemini REST API with automatic model fallback"
       }
     ],
     "default_input_modes": ["text", "image"],

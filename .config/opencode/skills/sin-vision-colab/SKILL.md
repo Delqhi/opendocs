@@ -1,40 +1,54 @@
 ---
 name: sin-vision-colab
-description: "Screen recording + AI vision analysis via official Google Colab MCP Server. 100% Headless. No browser automation. Uses Gemini via google-colab-ai natively."
+description: "Screen recording + AI vision analysis via direct Gemini REST API. No browser, no Colab MCP, no CDP. Pure REST with 6-model fallback chain for unlimited vision calls."
 license: Apache-2.0
 compatibility: opencode
 metadata:
   audience: all-agents
   workflow: screen-vision-analysis
   trigger: screen-record, screenshot, vision-analyze, look-screen
-  version: v3-colab-mcp-server
+  version: v4-gemini-rest-fallback
 ---
 
-# A2A-SIN-Vision-Colab Skill (v3 SOTA 2026)
+# A2A-SIN-Vision-Colab Skill (v4 SOTA 2026)
 
-Screen recording + AI vision analysis via the **Colab MCP Server** using **google-colab-ai**.
+Screen recording + AI vision analysis via **direct Gemini REST API** with a **6-model fallback chain**.
 
-## 🔴 THE FALL OF BROWSER AUTOMATION (March 2026)
+## 🔴 WHAT DOES NOT WORK (March 2026)
 
-**Browser automation (nodriver, AppleScript) for Google Colab is dead.**
-Chrome 146+ blocks DevToolsActivePort on default profiles, and AppleScript JavaScript execution is disabled by default.
+- ❌ **Browser automation (nodriver, AppleScript) for Colab** — Chrome 146+ blocks DevToolsActivePort
+- ❌ **Colab MCP Server** — requires open browser tab, not headless
+- ❌ **CDP on default Chrome profile** — blocked since Chrome 146
+- ❌ **Leaked Gemini API keys** — old key `AIzaSyA1THIC_...` is revoked
 
-We no longer use Cloudflare tunnels, FastAPI, or hacky browser scripts. We use the **Colab MCP Server** directly.
-
-## 🟢 ARCHITEKTUR (V3 - Colab MCP Server)
+## 🟢 ARCHITECTURE (V4 - Direct Gemini REST API)
 
 ```
-[Agent] → look-screen CLI → [OpenCode MCP Client] → [Colab MCP Server] → Gemini Vision Analysis
-              ↓
-        Supabase Vision Logs
+[Agent] → look-screen CLI → [Gemini REST API] → Vision Analysis
+              ↓                    ↑
+        screencapture -x      base64 inline_data
+              ↓                    ↑
+        /tmp/screen.png      6-model fallback chain
 ```
 
 ## 🔑 KEY FEATURES
 
-- ✅ **KEIN Browser mehr!** — 100% Headless API Connection.
-- ✅ **Offizielles MCP** — Google Colab MCP Server.
-- ✅ **KEIN API-Key** — läuft direkt über das im MCP Server gemountete Google-Konto.
-- ✅ **Gemini 2.5 Pro gratis** für ALLE Colab-Nutzer.
+- ✅ **KEIN Browser!** — Pure REST, no browser at all
+- ✅ **KEIN Colab MCP!** — Direct Gemini API, no notebook needed
+- ✅ **KEIN CDP!** — No Chrome DevTools Protocol
+- ✅ **6-Model Fallback Chain** — Practically unlimited free-tier calls
+- ✅ **API Key:** `AIzaSyCnRoGEoQJBAVssEu6BP1ojSBzIwV5r8_o`
+
+## 📋 FALLBACK CHAIN (Unlimited Free Tier)
+
+| Priority | Model | Free Tier Quota | Purpose |
+|----------|-------|-----------------|---------|
+| 1 | `gemini-2.5-flash` | Unlimited RPM, 1M context | Primary vision |
+| 2 | `gemini-3-flash-preview` | 5 RPM, 250K tokens | Backup vision |
+| 3 | `gemini-3.1-flash-lite-preview` | 15 RPM, 250K tokens | Lightweight backup |
+| 4 | `gemma-3-27b` | 30 RPM, 15K context | Fallback vision |
+| 5 | `gemma-3-12b` | 30 RPM, 15K context | Fallback vision |
+| 6 | `gemma-3-4b` | 30 RPM, 15K context | Last resort |
 
 ## 📋 WANN NUTZEN
 
@@ -46,81 +60,60 @@ We no longer use Cloudflare tunnels, FastAPI, or hacky browser scripts. We use t
 | "überwache bildschirm" | `look-screen --interval 3` |
 | "stop aufnahme" | `look-screen --stop` |
 
-## 🚀 SETUP (Colab MCP Server)
+## 🚀 SETUP
 
-### 1. Installation (einmalig)
-
-Der Colab MCP Server wird über `uvx` direkt vom GitHub-Repo geladen. Keine manuelle Installation nötig:
+### 1. look-screen CLI ist bereits installiert
 
 ```bash
-# Testen ob uvx verfügbar ist
-uvx --version
-
-# Colab MCP Server testen (lädt automatisch beim ersten Aufruf)
-uvx git+https://github.com/googlecolab/colab-mcp --help
+# Symlink: ~/.local/bin/look-screen → ~/.open-auth-rotator/tools/look_screen.py
+look-screen --version
+# Output: look-screen v4.0.0 (Gemini REST API + Fallback Chain)
 ```
 
-### 2. OpenCode MCP Konfiguration
+### 2. API Key konfigurieren (optional)
 
-Registriere den `colab` MCP Server in deiner `opencode.json`. Es sind keine Colab-Notebook-URLs (`vision-colab-1.url`) oder Cloudflare-Tunnel mehr nötig!
-
-```json
-// opencode.json — im "mcp" Block hinzufügen
-"colab": {
-  "type": "local",
-  "command": [
-    "uvx",
-    "git+https://github.com/googlecolab/colab-mcp"
-  ],
-  "enabled": true
-}
-```
-
-### 3. Colab Notebook öffnen
-
-Öffne ein Google Colab Notebook in deinem Browser und halte den Tab offen. Der MCP Server verbindet sich automatisch mit dem aktiven Notebook.
-
-**Genutzte Google Accounts:**
-- `zukunftsorientierte.energie@gmail.com` (Primary)
-- `jeremyschulze93@gmail.com` (Secondary)
-
-### 4. Verifizieren
+Der API Key ist hardcoded im Script. Überschreiben via Environment Variable:
 
 ```bash
-# look-screen Status prüfen
+export GEMINI_VISION_API_KEY="your-key-here"
+```
+
+### 3. Verifizieren
+
+```bash
 look-screen --status
-
-# Erwartete Ausgabe:
-# [look-screen] Vision Architecture: v3-colab-mcp-server
-# [look-screen] Engine: google-colab-ai (Gemini 2.5)
-# [look-screen] Status: Active - Routing through OpenCode MCP
+# Expected:
+# [look-screen] Vision Architecture: v4-gemini-rest-fallback
+# [look-screen] Models (6): gemini-2.5-flash, gemini-3-flash-preview, ...
+# [look-screen] Browser Automation: NONE (Pure REST)
+# [look-screen] Status: Active
 ```
 
 ## 🔧 LOOK-SCREEN CLI
 
-Das `look-screen` Tool delegiert jetzt an den `opencode run` Befehl, um den Colab MCP Server aufzurufen.
-
 ```bash
-# Status prüfen (zeigt v3 Architektur)
+# Status prüfen
 look-screen --status
 
-# Einzelnes Screenshot analysieren
+# Screenshot analysieren
 look-screen --screenshot /tmp/screen.png --describe
 
-# Kontinuierliche Überwachung (alle 3 Sekunden)
+# Mit custom Prompt
+look-screen --screenshot /tmp/screen.png --describe --prompt "Ist ein Fehler sichtbar?"
+
+# Kontinuierliche Überwachung
 look-screen --interval 3
 
-# Screenshot aufnehmen und beschreiben
+# Screenshot + Analyse in einem Befehl
 screencapture -x /tmp/screen.png && look-screen --screenshot /tmp/screen.png --describe
 ```
 
 ## 🔄 AGENT WORKFLOW
 
 ```python
-# So nutzt JEDER Agent diesen Skill:
+import subprocess
 
 # 1. Screenshot machen
-import subprocess
 subprocess.run(["screencapture", "-x", "/tmp/screen.png"])
 
 # 2. Analyse anfordern
@@ -131,12 +124,12 @@ result = subprocess.run(
 analysis = result.stdout
 ```
 
-## ⚠️ ARCHITECTURAL RULE: NO BROWSER AUTOMATION FOR COLAB
+## ⚠️ ARCHITECTURAL RULE: NO BROWSER FOR VISION
 
-**NIEMALS** versuchen, Colab über den Browser mit AppleScript oder `nodriver` zu automatisieren. Wenn Colab benötigt wird, **IMMER** den Colab MCP Server nutzen.
+**NIEMALS** versuchen, Vision-Analyse über Browser, Colab MCP oder CDP zu machen.
+Immer `look-screen` CLI nutzen — das ruft direkt die Gemini REST API auf.
 
 ## 🔗 RESSOURCEN
 
-- [google-colab-ai Getting Started](https://colab.research.google.com/github/googlecolab/colabtools/blob/main/notebooks/Getting_started_with_google_colab_ai.ipynb)
-- [Colab MCP Server (März 2026)](https://googledevelopers.blogspot.com/announcing-the-colab-mcp-server-connect-any-ai-agent-to-google-colab/)
-- [Colab MCP GitHub Repo](https://github.com/googlecolab/colab-mcp)
+- [Gemini Vision API Docs](https://ai.google.dev/gemini-api/docs/vision)
+- [Gemini API Rate Limits](https://ai.google.dev/gemini-api/docs/rate-limits)
